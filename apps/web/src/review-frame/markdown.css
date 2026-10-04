@@ -1,0 +1,117 @@
+/* Document-only colors follow the host's light/dark state without changing its UI. */
+:root {
+  --md-paper: color-mix(in srgb, var(--background, #202124) 16%, #202124);
+  --md-ink: color-mix(in srgb, var(--foreground, #e1dfda) 20%, #e1dfda);
+  --md-soft-ink: #a7a6a1;
+  --md-line: #363739;
+  --md-line-strong: #5b5c5e;
+  --md-wash: #282a2c;
+  --md-code: #25272a;
+  --md-link: #a9c5ee;
+  --md-keyword: #cfb4f5;
+  --md-string: #abd1b2;
+  --md-number: #e4bc91;
+  --md-comment: #a7adb6;
+}
+:root.light {
+  --md-paper: color-mix(in srgb, var(--background, #fffefa) 24%, #fbfaf7);
+  --md-ink: color-mix(in srgb, var(--foreground, #37352f) 12%, #37352f);
+  --md-soft-ink: #75736d;
+  --md-line: #e8e5de;
+  --md-line-strong: #c8c4ba;
+  --md-wash: #f2f0ea;
+  --md-code: #f3f2ee;
+  --md-link: #365d87;
+  --md-keyword: #7652a6;
+  --md-string: #3f6b49;
+  --md-number: #8c542b;
+  --md-comment: #73746e;
+}
+* { box-sizing: border-box; }
+html { background: var(--md-paper); }
+body {
+  margin: 0;
+  background: var(--md-paper);
+  color: var(--md-ink);
+  font: 400 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.md-layout {
+  width: min(calc(100% - 64px), 740px);
+  margin-inline: auto;
+  padding-block: 40px 96px;
+  container-type: inline-size;
+}
+.md-document { overflow-wrap: anywhere; }
+.md-document > :first-child { margin-top: 0; }
+.md-document h1 {
+  font-size: clamp(1.85rem, 4.4cqi, 2.3rem);
+  font-weight: 650;
+  letter-spacing: -.035em;
+  line-height: 1.2;
+  margin-bottom: 22px;
+}
+h2, h3, h4, h5, h6 { line-height: 1.35; letter-spacing: -.02em; font-weight: 600; scroll-margin-top: 24px; }
+h2 { font-size: 1.4rem; margin: 38px 0 12px; }
+h3 { font-size: 1.13rem; margin: 28px 0 10px; }
+h4, h5, h6 { font-size: 1rem; margin: 24px 0 8px; }
+p { margin-block: 14px; }
+strong { font-weight: 600; }
+.md-document > h1 + p { color: var(--md-soft-ink); font-size: 1.04rem; line-height: 1.75; margin-bottom: 26px; }
+.md-outline { margin-bottom: 24px; color: var(--md-soft-ink); font-size: 12px; line-height: 1.6; }
+.md-outline details { width: fit-content; max-width: 100%; }
+.md-outline summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 7px; user-select: none; }
+.md-outline summary::-webkit-details-marker { display: none; }
+.md-outline summary::before { content: "≡"; font-size: 17px; line-height: 1; opacity: .8; }
+.md-outline summary::after { content: "⌄"; font-size: 12px; opacity: .6; }
+.md-outline details[open] summary { color: var(--md-ink); }
+.md-outline ol { list-style: none; margin: 10px 0 0; padding: 8px 0 8px 14px; border-left: 1px solid var(--md-line); }
+.md-outline li { margin-block: 5px; }
+.md-outline a { color: var(--md-soft-ink); text-decoration: none; }
+.md-outline a:hover { color: var(--md-link); }
+.md-toc-level-3, .md-toc-level-4 { margin-left: 14px; }
+ul, ol { margin-block: 14px; padding-left: 1.4rem; }
+li { padding-left: 3px; margin-block: 5px; }
+li > p { margin-block: 6px; }
+li > ul, li > ol { margin-block: 5px; }
+li::marker { color: var(--md-soft-ink); }
+.md-task-item { list-style: none; position: relative; }
+.md-task-item input { position: absolute; left: -19px; top: 6px; width: 14px; height: 14px; margin: 0; accent-color: var(--md-soft-ink); }
+a { color: var(--md-link); text-decoration-color: color-mix(in srgb, var(--md-link) 45%, transparent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--md-link); outline-offset: 4px; border-radius: 2px; }
+blockquote { border-left: 3px solid var(--md-line-strong); padding: 2px 20px; margin: 26px 0; color: var(--md-soft-ink); }
+blockquote p { margin-block: 8px; }
+pre { overflow-x: auto; padding: 20px 22px; margin-block: 20px; background: var(--md-code); border: 1px solid var(--md-line); border-radius: 6px; font: 400 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; tab-size: 2; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .84em; }
+:not(pre) > code { padding: 2px 5px; border-radius: 4px; background: var(--md-wash); color: var(--md-ink); }
+pre code { font-size: inherit; overflow-wrap: normal; }
+.md-table-wrap { overflow-x: auto; margin-block: 22px; border: 1px solid var(--md-line); border-radius: 6px; }
+table { width: 100%; min-width: 400px; border-collapse: collapse; font-size: 14px; line-height: 1.6; }
+th, td { padding: 11px 14px; border-bottom: 1px solid var(--md-line); text-align: left; vertical-align: top; }
+th { background: var(--md-wash); color: var(--md-soft-ink); font-weight: 500; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.md-image { display: block; margin-block: 24px; }
+img { display: block; max-width: 100%; height: auto; border-radius: 6px; }
+.md-image-caption { display: block; margin-top: 10px; text-align: center; color: var(--md-soft-ink); font-size: 12px; line-height: 1.5; }
+.md-image-unavailable { display: block; padding: 14px 16px; margin-block: 20px; border: 1px dashed var(--md-line-strong); border-radius: 6px; color: var(--md-soft-ink); font-size: 13px; }
+hr { border: 0; border-top: 1px solid var(--md-line); margin-block: 32px; }
+.hljs-comment, .hljs-quote { color: var(--md-comment); }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal { color: var(--md-keyword); }
+.hljs-string, .hljs-title, .hljs-section, .hljs-built_in { color: var(--md-string); }
+.hljs-number, .hljs-attr, .hljs-variable { color: var(--md-number); }
+@media (max-width: 540px) {
+  .md-layout { width: calc(100% - 48px); padding-block: 28px 72px; }
+  body { font-size: 15px; }
+  h2 { font-size: 1.3rem; }
+  pre { padding: 16px; font-size: 12px; }
+  th, td { padding: 10px 12px; }
+}
+@media (min-width: 1100px) { .md-layout { padding-block: 64px 112px; } }
+.md-mermaid { margin: 26px 0; overflow-x: auto; }
+.md-mermaid > svg { display: block; width: 100%; height: auto;  margin-inline: auto; pointer-events: none; }
+.md-mermaid > details { margin-top: 12px; color: var(--md-soft-ink); font-size: 12px; }
+.md-mermaid summary { cursor: pointer; width: fit-content; }
+.md-diagram-status { font-size: 13px; color: var(--md-soft-ink); }
+.md-diagram-scratch { position: absolute; left: -10000px; top: 0; width: 740px; visibility: hidden; }
+.md-mermaid svg * { filter: none; }

@@ -1,0 +1,164 @@
+{
+  "config": {
+    "argv": [
+      "/opt/homebrew/Cellar/node/25.9.0_3/bin/node",
+      "/Users/tstang/Code/worktrees/artifact-server/markdown-review/node_modules/@playwright/test/cli.js",
+      "test",
+      "tests/browser/review-markdown.spec.ts",
+      "--grep",
+      "semicolon directives",
+      "--output=/tmp/artifact-markdown-quoting-before",
+      "--reporter=line,json"
+    ],
+    "configFile": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/playwright.config.ts",
+    "rootDir": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/tmp/artifact-markdown-quoting-before",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "review-markdown.spec.ts",
+      "file": "review-markdown.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Markdown review",
+          "file": "review-markdown.spec.ts",
+          "line": 47,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Mermaid static contract: semicolon directives fall back independently while quoted directive words remain diagram labels",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 10353,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.as-artifact-frame').contentFrame().locator('iframe').contentFrame().locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')\nTimeout: 10000ms\n\u001b[32m- Expected  - 6\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"flowchart TD; A[Styled]; classDef default fill:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Styled]; style A fill:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Linked]; click A \\\"//tracking.invalid/pixel\\\"\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Start]-->B[End]; linkStyle 0 stroke:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[\\\"Trail\\\\\\\"]; style A fill:red; B[\\\"Done\\\"]\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Plain`text]; style A fill:red; B[End`text]\",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Styled]; classDef default fill:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Styled]; style A fill:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Linked]; click A \\\"//tracking.invalid/pixel\\\"\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Start]-->B[End]; linkStyle 0 stroke:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[2m  ]\u001b[22m\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.as-artifact-frame').contentFrame().locator('iframe').contentFrame().locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')\u001b[22m\n\u001b[2m    3 × locator resolved to 0 elements\u001b[22m\n\u001b[2m    17 × locator resolved to 4 elements\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.as-artifact-frame').contentFrame().locator('iframe').contentFrame().locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')\nTimeout: 10000ms\n\u001b[32m- Expected  - 6\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"flowchart TD; A[Styled]; classDef default fill:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Styled]; style A fill:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Linked]; click A \\\"//tracking.invalid/pixel\\\"\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Start]-->B[End]; linkStyle 0 stroke:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[\\\"Trail\\\\\\\"]; style A fill:red; B[\\\"Done\\\"]\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Plain`text]; style A fill:red; B[End`text]\",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Styled]; classDef default fill:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Styled]; style A fill:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Linked]; click A \\\"//tracking.invalid/pixel\\\"\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Start]-->B[End]; linkStyle 0 stroke:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[2m  ]\u001b[22m\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.as-artifact-frame').contentFrame().locator('iframe').contentFrame().locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')\u001b[22m\n\u001b[2m    3 × locator resolved to 0 elements\u001b[22m\n\u001b[2m    17 × locator resolved to 4 elements\u001b[22m\n\n    at /Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser/review-markdown.spec.ts:219:95",
+                        "location": {
+                          "file": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser/review-markdown.spec.ts",
+                          "column": 95,
+                          "line": 219
+                        },
+                        "snippet": "  217 |       const review = fixture.page.frameLocator(\".as-artifact-frame\");\n  218 |       const preview = review.frameLocator(\"iframe\");\n> 219 |       await expect(preview.locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')).toHaveText(rejected);\n      |                                                                                               ^\n  220 |       await expect(preview.locator('.md-mermaid[data-diagram-state=\"rendered\"]')).toHaveCount(1);\n  221 |       await expect(preview.locator(\".md-mermaid svg\")).toContainText(/A calm label; style\\s*A fill:red/u);\n  222 |       await expect(preview.locator(\".md-mermaid svg\")).toContainText(/classDef default\\s*fill:red/u);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser/review-markdown.spec.ts",
+                            "column": 95,
+                            "line": 219
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.as-artifact-frame').contentFrame().locator('iframe').contentFrame().locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')\nTimeout: 10000ms\n\u001b[32m- Expected  - 6\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[2m  Array [\u001b[22m\n\u001b[32m-   \"flowchart TD; A[Styled]; classDef default fill:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Styled]; style A fill:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Linked]; click A \\\"//tracking.invalid/pixel\\\"\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Start]-->B[End]; linkStyle 0 stroke:red\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[\\\"Trail\\\\\\\"]; style A fill:red; B[\\\"Done\\\"]\",\u001b[39m\n\u001b[32m-   \"flowchart TD; A[Plain`text]; style A fill:red; B[End`text]\",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Styled]; classDef default fill:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Styled]; style A fill:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Linked]; click A \\\"//tracking.invalid/pixel\\\"\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[31m+   \"flowchart TD; A[Start]-->B[End]; linkStyle 0 stroke:red\u001b[39m\n\u001b[31m+ \",\u001b[39m\n\u001b[2m  ]\u001b[22m\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.as-artifact-frame').contentFrame().locator('iframe').contentFrame().locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')\u001b[22m\n\u001b[2m    3 × locator resolved to 0 elements\u001b[22m\n\u001b[2m    17 × locator resolved to 4 elements\u001b[22m\n\n\n  217 |       const review = fixture.page.frameLocator(\".as-artifact-frame\");\n  218 |       const preview = review.frameLocator(\"iframe\");\n> 219 |       await expect(preview.locator('.md-mermaid[data-diagram-state=\"unavailable\"] pre code')).toHaveText(rejected);\n      |                                                                                               ^\n  220 |       await expect(preview.locator('.md-mermaid[data-diagram-state=\"rendered\"]')).toHaveCount(1);\n  221 |       await expect(preview.locator(\".md-mermaid svg\")).toContainText(/A calm label; style\\s*A fill:red/u);\n  222 |       await expect(preview.locator(\".md-mermaid svg\")).toContainText(/classDef default\\s*fill:red/u);\n    at /Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser/review-markdown.spec.ts:219:95"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-04T03:30:29.589Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/tmp/artifact-markdown-quoting-before/review-markdown-Markdown-r-a3c87-words-remain-diagram-labels/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/tmp/artifact-markdown-quoting-before/review-markdown-Markdown-r-a3c87-words-remain-diagram-labels/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser/review-markdown.spec.ts",
+                        "column": 95,
+                        "line": 219
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7b07cf061c83208b677b-0c40fb936ebd0bc6dbcc",
+              "file": "review-markdown.spec.ts",
+              "line": 195,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-04T03:30:28.933Z",
+    "duration": 11176.956999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

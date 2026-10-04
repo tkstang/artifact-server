@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-label="Source, review, and revision with preserved history">
+ <rect width="960" height="280" rx="16" fill="#eeeae2"/>
+ <g fill="#faf9f6" stroke="#d3cec3"><rect x="46" y="60" width="236" height="138" rx="12"/><rect x="362" y="60" width="236" height="138" rx="12"/><rect x="678" y="60" width="236" height="138" rx="12"/></g>
+ <g fill="#66776c" font-family="system-ui, sans-serif" font-size="13" letter-spacing="2"><text x="72" y="94">01 / SOURCE</text><text x="388" y="94">02 / REVIEW</text><text x="704" y="94">03 / REVISION</text></g>
+ <g fill="#3c3a34" font-family="system-ui, sans-serif" font-size="23" font-weight="600"><text x="72" y="132">Share the intent</text><text x="388" y="132">Add perspective</text><text x="704" y="132">Move it forward</text></g>
+ <g fill="#77736b" font-family="system-ui, sans-serif" font-size="14"><text x="72" y="164">The original stays available.</text><text x="388" y="164">Feedback keeps its context.</text><text x="704" y="164">History follows the work.</text></g>
+ <g fill="none" stroke="#aaa495" stroke-width="2" stroke-linecap="round"><path d="M300 129h43m-8-7 8 7-8 7"/><path d="M616 129h43m-8-7 8 7-8 7"/></g>
+ <text x="480" y="241" text-anchor="middle" fill="#827d73" font-family="system-ui, sans-serif" font-size="13">Each version is a record, not a replacement.</text>
+</svg>

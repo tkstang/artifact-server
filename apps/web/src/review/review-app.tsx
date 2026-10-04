@@ -1630,7 +1630,7 @@ function ArtifactReview({
                   inert={focusControlsCollapsed}
                   role="toolbar"
                 >
-                  {previewKind === "html" && canComment ? (
+                  {(previewKind === "html" || previewKind === "markdown") && canComment ? (
                     <button
                       aria-pressed={htmlAnnotateModeActive}
                       className="as-button as-focus-controls__button"
@@ -1757,7 +1757,7 @@ function ArtifactReview({
               <h1>{details?.artifact.name ?? selectedItem?.artifact.name ?? "Artifact Server"}</h1>
             </div>
             <div className="as-preview-header__actions">
-              {previewKind === "html" && canComment ? (
+              {(previewKind === "html" || previewKind === "markdown") && canComment ? (
                 <IconButton
                   active={htmlAnnotateModeActive}
                   label={htmlAnnotateModeActive
@@ -2777,7 +2777,7 @@ function reviewHref(location: ReviewLocation): string {
 function reviewPreviewKind(
   version: ArtifactVersion | null,
   selectedPath: string | null,
-): "html" | "media" | "other" {
+): "html" | "markdown" | "media" | "other" {
   if (version === null) return "other";
   const path = selectedPath ?? version.manifest.entryPath;
   const mediaType = version.manifest.entries
@@ -2786,6 +2786,7 @@ function reviewPreviewKind(
     ?.trim()
     .toLowerCase();
   if (mediaType === "text/html") return "html";
+  if (mediaType === "text/markdown" || (path.toLowerCase().endsWith(".md") && mediaType === "text/plain")) return "markdown";
   if (mediaType?.startsWith("image/") || mediaType?.startsWith("video/")) {
     return "media";
   }
