@@ -4871,3 +4871,57 @@ requirements:
         result: pass
         run: project/evidence/browser.json
         recorded_at: "2026-08-24T03:47:04.897Z"
+
+  - id: MDN-001
+    kind: behavior
+    behavior: Markdown review preserves immutable source and exact-version feedback while rendering a readable source-aware review document.
+    owner: web-application
+    source: {file: markdown-review-spec.md, anchor: conformance-requirements}
+    acceptance:
+      behavior: {id: MDN-001-B, description: "Publish a Markdown bundle, render its headings, tasks, table, code and local image, create a UI comment, and read its quote, source block, section, version and path through the comment API."}
+      failure: {id: MDN-001-F, description: "After publishing a revised version, the original CRLF source downloads byte-for-byte and its historical feedback remains on the original revision rather than appearing on the revision."}
+    deployments: *all
+    status: behavior_verified
+    depends_on: [CMT-012, CMT-014, ART-004]
+    evidence:
+      - deployment: local
+        tests: [MDN-001-B, MDN-001-F]
+        result: pass
+        run: project/evidence/markdown-review/browser.json
+        recorded_at: "2026-10-04T03:11:57.313000+00:00"
+
+  - id: MDN-002
+    kind: security
+    behavior: Markdown review cannot execute authored HTML or fetch arbitrary image URLs and retains the existing opaque-origin review sandbox.
+    owner: web-application
+    source: {file: markdown-review-spec.md, anchor: conformance-requirements}
+    acceptance:
+      behavior: {id: MDN-002-B, description: "Markdown's manifest-listed local image renders through the exact-version content lease inside the existing allow-scripts opaque-origin sandbox."}
+      failure: {id: MDN-002-F, description: "Authored scripts and image event attributes remain literal text, JavaScript links are not emitted, and remote or app-origin images produce labels without requests."}
+    deployments: *all
+    status: behavior_verified
+    depends_on: [CMT-014, SEC-001]
+    evidence:
+      - deployment: local
+        tests: [MDN-002-B, MDN-002-F]
+        result: pass
+        run: project/evidence/markdown-review/browser.json
+        recorded_at: "2026-10-04T03:11:57.313000+00:00"
+
+  - id: MDN-003
+    kind: behavior
+    behavior: Mermaid diagrams are static isolated review presentations with exact-version source-aware comments and readable failure fallback.
+    owner: web-application
+    source: {file: markdown-review-spec.md, anchor: conformance-requirements}
+    acceptance:
+      behavior: {id: MDN-003-B, description: "Render a real Mermaid diagram, switch host theme, create diagram feedback, and retrieve its exact fence source, section, version and path after revision."}
+      failure: {id: MDN-003-F, description: "Invalid syntax and malicious link/HTML directives remain source fallback, with no active SVG content or external request; the opaque sandbox and original source remain intact."}
+    deployments: *all
+    status: behavior_verified
+    depends_on: [MDN-001, MDN-002, CMT-014]
+    evidence:
+      - deployment: local
+        tests: [MDN-003-B, MDN-003-F]
+        result: pass
+        run: project/evidence/markdown-review/browser.json
+        recorded_at: "2026-10-04T03:11:57.313000+00:00"

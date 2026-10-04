@@ -1,0 +1,14 @@
+[
+  {
+    "name": "light",
+    "bodyFont": "-apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "bodyWeight": "400",
+    "pageOverflow": false
+  },
+  {
+    "name": "dark",
+    "bodyFont": "-apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "bodyWeight": "400",
+    "pageOverflow": false
+  }
+]

@@ -15,8 +15,11 @@ import {
   type ReviewAnnotation,
 } from "@/review-frame/protocol";
 
+import {renderMarkdown, withMarkdownSource} from "@/review-frame/markdown";
+
 interface PreviewDocument {
-  readonly baseHref: string;
+  readonly markdownSource: string | null;
+  readonly baseHref: string | null;
   readonly entryPath: string;
   readonly html: string;
 }
@@ -106,9 +109,10 @@ export function ReviewPreview({
   }
   const mediaType = mediaTypeEssence(entry.mediaType);
   const identity = `${version.version.id}:${entry.path}`;
-  if (mediaType === "text/html") {
+  if (mediaType === "text/html" || mediaType === "text/markdown" || (entry.path.toLowerCase().endsWith(".md") && mediaType === "text/plain")) {
     return (
       <HtmlPreview
+        markdown={mediaType !== "text/html"}
         actions={commonActions}
         annotateModeActive={annotateModeActive}
         annotations={annotations}
@@ -186,6 +190,7 @@ export function ReviewPreview({
 }
 
 function HtmlPreview({
+  markdown,
   actions,
   annotateModeActive,
   annotations,
@@ -201,6 +206,7 @@ function HtmlPreview({
   selectedThreadId,
   version,
 }: {
+  readonly markdown: boolean;
   readonly actions: PreviewActions;
   readonly annotateModeActive: boolean;
   readonly annotations: readonly ReviewAnnotation[];
@@ -253,11 +259,14 @@ function HtmlPreview({
             },
           ),
         ]);
+        const baseHref = documentBaseUrl(resolvedBase, entry.path);
+        const renderedHtml = markdown ? await renderMarkdown(html, baseHref, resolvedBase, version.manifest.entries) : html;
         if (current) {
           setPreviewDocument({
-            baseHref: documentBaseUrl(resolvedBase, entry.path),
+            baseHref: markdown ? null : baseHref,
             entryPath: entry.path,
-            html,
+            html: renderedHtml,
+            markdownSource: markdown ? html : null,
           });
         }
       } catch (cause) {
@@ -272,7 +281,7 @@ function HtmlPreview({
     return () => {
       current = false;
     };
-  }, [artifactId, entry.path, projectId, version.version.id]);
+  }, [artifactId, entry.path, markdown, projectId, version.manifest.entries, version.version.id]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<unknown>): void => {
@@ -298,7 +307,10 @@ function HtmlPreview({
         return;
       }
       void (async () => {
-        const saved = await onSubmitAnnotation(message.body, message.anchor, entry.path);
+        const anchor = previewDocument === null || previewDocument.markdownSource === null
+          ? message.anchor
+          : withMarkdownSource(message.anchor, previewDocument.html, previewDocument.markdownSource);
+        const saved = await onSubmitAnnotation(message.body, anchor, entry.path);
         if (!saved) {
           postToFrame({
             annotations: [...annotations],
@@ -318,6 +330,7 @@ function HtmlPreview({
     onSubmitAnnotation,
     onUnanchoredChange,
     postToFrame,
+    previewDocument,
   ]);
 
   useEffect(() => {

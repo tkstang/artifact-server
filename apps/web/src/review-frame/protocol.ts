@@ -44,6 +44,13 @@ export const reviewAnchorSchema = z.object({
   htmlAdditionalTargets: z.array(htmlAnnotationTargetSchema).max(16).optional(),
   htmlAnchor: htmlElementAnchorSchema.nullable(),
   originalText: z.string().max(10_000),
+  markdownSource: z.object({
+    startLine: z.number().int().positive(),
+    endLine: z.number().int().positive(),
+    section: z.string().max(512),
+    sourceText: z.string().max(2_000),
+    truncated: z.boolean(),
+  }).optional(),
 });
 
 const optionalAnchorSchema = reviewAnchorSchema.nullable().catch(null);

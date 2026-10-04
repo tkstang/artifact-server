@@ -4008,3 +4008,22 @@ body:has(.as-settings) [data-slot="dialog-trigger"]:active:not(:disabled) {
   color: var(--as-muted);
   line-height: 1.4;
 }
+
+/* Markdown reserves room for the existing focus tools instead of covering the
+ * document. Scope these reading-surface changes to Markdown; other previews
+ * keep their original presentation. */
+.as-app[data-focus-mode="true"] .as-preview-panel__body[data-preview-kind="markdown"] {
+  padding-top: 60px;
+}
+.as-app:has(.as-preview-panel__body[data-preview-kind="markdown"]) .as-focus-controls-dock {
+  max-width: calc(100% - 1.5rem);
+}
+.as-app:has(.as-preview-panel__body[data-preview-kind="markdown"]) .as-focus-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 600px) {
+  .as-app[data-focus-mode="true"] .as-preview-panel__body[data-preview-kind="markdown"] {
+    padding-top: 104px;
+  }
+}

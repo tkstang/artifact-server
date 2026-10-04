@@ -1,0 +1,54 @@
+{
+  "numFailedTestSuites": 0,
+  "numFailedTests": 0,
+  "numPassedTestSuites": 1,
+  "numPassedTests": 3,
+  "numPendingTests": 0,
+  "numPendingTestSuites": 0,
+  "numTodoTests": 0,
+  "numTotalTestSuites": 1,
+  "numTotalTests": 3,
+  "startTime": 1791083517313,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Markdown review"
+          ],
+          "duration": 1747,
+          "failureMessages": [],
+          "fullName": "Markdown review MDN-001-B MDN-001-F MDN-002-B MDN-002-F: Markdown renders safely and preserves source and anchored feedback after revision",
+          "status": "passed",
+          "title": "MDN-001-B MDN-001-F MDN-002-B MDN-002-F: Markdown renders safely and preserves source and anchored feedback after revision"
+        },
+        {
+          "ancestorTitles": [
+            "Markdown review"
+          ],
+          "duration": 2364,
+          "failureMessages": [],
+          "fullName": "Markdown review MDN-003-B MDN-003-F: static Mermaid diagrams render with source-aware comments while invalid or active content remains readable and inert",
+          "status": "passed",
+          "title": "MDN-003-B MDN-003-F: static Mermaid diagrams render with source-aware comments while invalid or active content remains readable and inert"
+        },
+        {
+          "ancestorTitles": [
+            "Markdown review"
+          ],
+          "duration": 342,
+          "failureMessages": [],
+          "fullName": "Markdown review Markdown compatibility: a plain-text .md publication renders as Markdown without modifying source",
+          "status": "passed",
+          "title": "Markdown compatibility: a plain-text .md publication renders as Markdown without modifying source"
+        }
+      ],
+      "endTime": 1791083652622.971,
+      "message": "",
+      "name": "/Users/tstang/Code/worktrees/artifact-server/markdown-review/tests/browser/review-markdown.spec.ts",
+      "startTime": 1791083517313,
+      "status": "passed"
+    }
+  ]
+}
