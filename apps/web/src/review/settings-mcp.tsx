@@ -4,6 +4,11 @@ import {useEffect, useRef, useState} from "react";
 
 import {PageHeader} from "@/components/product";
 import {Button, ButtonLink} from "@/components/ui/button";
+import {
+  manualCopyMessage,
+  selectForManualCopy,
+  writeClipboard,
+} from "./share-clipboard.ts";
 
 type CopyTarget = "doctor" | "local" | "remote" | "skill";
 
@@ -14,29 +19,32 @@ export function McpScreen({administrator}: {readonly administrator: boolean}) {
   const [copiedTarget, setCopiedTarget] = useState<CopyTarget | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const copiedResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valueElements = useRef(new Map<CopyTarget, HTMLElement>());
   const mcpAddress = `${window.location.origin}/mcp`;
 
   useEffect(() => () => {
     if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
   }, []);
 
+  const registerValue = (target: CopyTarget) => (element: HTMLElement | null): void => {
+    if (element === null) valueElements.current.delete(target);
+    else valueElements.current.set(target, element);
+  };
+
   const copy = async (value: string, target: CopyTarget): Promise<void> => {
     setFailure(null);
-    try {
-      if (navigator.clipboard === undefined) {
-        throw new Error("Clipboard access is unavailable in this browser.");
-      }
-      await navigator.clipboard.writeText(value);
-      setCopiedTarget(target);
-      if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
-      copiedResetTimer.current = setTimeout(
-        () => setCopiedTarget(null),
-        copiedResetMilliseconds,
-      );
-    } catch {
+    if (!await writeClipboard(value)) {
       setCopiedTarget(null);
-      setFailure("Unable to copy. Select the value and copy it manually.");
+      setFailure(manualCopyMessage(target === "remote" ? "address" : "command"));
+      selectForManualCopy(valueElements.current.get(target) ?? null);
+      return;
     }
+    setCopiedTarget(target);
+    if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
+    copiedResetTimer.current = setTimeout(
+      () => setCopiedTarget(null),
+      copiedResetMilliseconds,
+    );
   };
 
   return (
@@ -64,6 +72,7 @@ export function McpScreen({administrator}: {readonly administrator: boolean}) {
             label="Copy local connection command"
             onCopy={() => void copy("artifactserver connect", "local")}
             value="artifactserver connect"
+            valueRef={registerValue("local")}
           />
           <p className="text-xs leading-5 text-muted-foreground text-pretty">
             If more than one supported client is installed, add its name: <code>codex</code>,{" "}
@@ -81,6 +90,7 @@ export function McpScreen({administrator}: {readonly administrator: boolean}) {
             label="Copy MCP server address"
             onCopy={() => void copy(mcpAddress, "remote")}
             value={mcpAddress}
+            valueRef={registerValue("remote")}
           />
           <p className="text-xs leading-5 text-muted-foreground text-pretty">
             If the client cannot use browser authentication, ask an administrator for a scoped
@@ -108,6 +118,7 @@ export function McpScreen({administrator}: {readonly administrator: boolean}) {
           label="Copy connection check command"
           onCopy={() => void copy("artifactserver doctor", "doctor")}
           value="artifactserver doctor"
+          valueRef={registerValue("doctor")}
         />
         <p className="text-xs leading-5 text-muted-foreground text-pretty">
           To remove a managed local connection, run <code>artifactserver disconnect</code>.
@@ -129,6 +140,7 @@ export function McpScreen({administrator}: {readonly administrator: boolean}) {
           label="Copy skill installation command"
           onCopy={() => void copy("npx skills add plannotator/artifact-server", "skill")}
           value="npx skills add plannotator/artifact-server"
+          valueRef={registerValue("skill")}
         />
       </section>
     </div>
@@ -163,15 +175,20 @@ function CopyableValue({
   label,
   onCopy,
   value,
+  valueRef,
 }: {
   readonly copied: boolean;
   readonly label: string;
   readonly onCopy: () => void;
   readonly value: string;
+  readonly valueRef: (element: HTMLElement | null) => void;
 }) {
   return (
     <div className="flex min-w-0 items-stretch border bg-muted/30">
-      <code className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5 text-xs leading-5 whitespace-nowrap">
+      <code
+        className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5 text-xs leading-5 whitespace-nowrap"
+        ref={valueRef}
+      >
         {value}
       </code>
       <Button

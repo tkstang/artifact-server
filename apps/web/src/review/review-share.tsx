@@ -30,6 +30,11 @@ import opencodeDarkLogoUrl from "./assets/agents/opencode-dark.svg";
 import opencodeLightLogoUrl from "./assets/agents/opencode-light.svg";
 import piLogoUrl from "./assets/agents/pi.svg";
 import piLightLogoUrl from "./assets/agents/pi-light.svg";
+import {
+  manualCopyMessage,
+  selectForManualCopy,
+  writeClipboard,
+} from "./share-clipboard.ts";
 
 type ShareScreen = "access" | "agents" | "overview";
 type CopiedTarget =
@@ -41,6 +46,16 @@ type CopiedTarget =
   | "review-link";
 
 const copiedResetMilliseconds = 1_600;
+
+/** What each copied value is called in the manual-copy message. */
+const copiedNouns = {
+  "agent-prompt": "prompt",
+  "latest-link": "link",
+  "local-command": "command",
+  "mcp-address": "address",
+  "raw-link": "link",
+  "review-link": "link",
+} satisfies Record<CopiedTarget, string>;
 
 interface ReviewShareControlProps {
   readonly details: ArtifactDetails | null;
@@ -68,6 +83,7 @@ export function ReviewShareControl({
   const [failure, setFailure] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const copiedResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valueElements = useRef(new Map<CopiedTarget, HTMLElement>());
 
   useEffect(() => () => {
     if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
@@ -83,29 +99,28 @@ export function ReviewShareControl({
     }
   };
 
-  const copyText = async (
-    text: string,
-    target: CopiedTarget,
-    failureMessage: string,
-  ): Promise<void> => {
+  const registerValue = (target: CopiedTarget) => (element: HTMLElement | null): void => {
+    if (element === null) valueElements.current.delete(target);
+    else valueElements.current.set(target, element);
+  };
+
+  const copyText = async (text: string, target: CopiedTarget): Promise<void> => {
     setFailure(null);
-    try {
-      if (navigator.clipboard === undefined) {
-        throw new Error("Clipboard access is unavailable in this browser.");
-      }
-      await navigator.clipboard.writeText(text);
-      setCopiedTarget(target);
-      if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
-      copiedResetTimer.current = setTimeout(
-        () => setCopiedTarget(null),
-        copiedResetMilliseconds,
-      );
-    } catch (caught) {
+    if (!await writeClipboard(text)) {
       setCopiedTarget(null);
-      setFailure(
-        caught instanceof Error ? caught.message : failureMessage,
-      );
+      const element = valueElements.current.get(target) ?? null;
+      setFailure(element === null
+        ? "Couldn't copy — your browser blocked the clipboard. Allow clipboard access and try again."
+        : manualCopyMessage(copiedNouns[target]));
+      selectForManualCopy(element);
+      return;
     }
+    setCopiedTarget(target);
+    if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
+    copiedResetTimer.current = setTimeout(
+      () => setCopiedTarget(null),
+      copiedResetMilliseconds,
+    );
   };
 
   const reviewLink = selectedVersion === null
@@ -117,7 +132,6 @@ export function ReviewShareControl({
     await copyText(
       reviewLink,
       "review-link",
-      "The exact Review link could not be copied.",
     );
   };
 
@@ -126,7 +140,6 @@ export function ReviewShareControl({
     await copyText(
       buildAgentReviewPrompt(details, selectedVersion, reviewLink),
       "agent-prompt",
-      "The agent review prompt could not be copied.",
     );
   };
 
@@ -247,7 +260,9 @@ export function ReviewShareControl({
                 <section aria-labelledby="as-share-link-heading" className="as-share-link">
                   <h3 id="as-share-link-heading">Review and comment</h3>
                   <div>
-                    <code title={reviewLink ?? undefined}>{reviewLink ?? ""}</code>
+                    <code ref={registerValue("review-link")} title={reviewLink ?? undefined}>
+                      {reviewLink ?? ""}
+                    </code>
                     <button
                       className="as-button as-button--primary"
                       disabled={reviewLink === null}
@@ -295,11 +310,11 @@ export function ReviewShareControl({
                         void copyText(
                           details.links.artifact,
                           "latest-link",
-                          "The latest artifact link could not be copied.",
                         );
                       }
                     }}
                     value={details?.links.artifact ?? ""}
+                    valueRef={registerValue("latest-link")}
                   />
                   <ShareSecondaryLink
                     copied={copiedTarget === "raw-link"}
@@ -310,11 +325,11 @@ export function ReviewShareControl({
                         void copyText(
                           selectedVersion.links.version,
                           "raw-link",
-                          "The raw version link could not be copied.",
                         );
                       }
                     }}
                     value={selectedVersion?.links.version ?? ""}
+                    valueRef={registerValue("raw-link")}
                   />
                 </section>
 
@@ -376,9 +391,9 @@ export function ReviewShareControl({
                     onCopy={() => void copyText(
                       "artifactserver connect",
                       "local-command",
-                      "The local connection command could not be copied.",
                     )}
                     value="artifactserver connect"
+                    valueRef={registerValue("local-command")}
                   />
                 </section>
 
@@ -394,9 +409,9 @@ export function ReviewShareControl({
                     onCopy={() => void copyText(
                       mcpAddress,
                       "mcp-address",
-                      "The MCP server address could not be copied.",
                     )}
                     value={mcpAddress}
+                    valueRef={registerValue("mcp-address")}
                   />
                 </section>
 
@@ -536,15 +551,17 @@ function CopyableAgentValue({
   label,
   onCopy,
   value,
+  valueRef,
 }: {
   readonly copied: boolean;
   readonly label: string;
   readonly onCopy: () => void;
   readonly value: string;
+  readonly valueRef: (element: HTMLElement | null) => void;
 }) {
   return (
     <div className="as-share-agent-value">
-      <code title={value}>{value}</code>
+      <code ref={valueRef} title={value}>{value}</code>
       <button aria-label={label} onClick={onCopy} type="button">
         <HugeiconsIcon
           aria-hidden="true"
@@ -562,12 +579,14 @@ function ShareSecondaryLink({
   label,
   onCopy,
   value,
+  valueRef,
 }: {
   readonly copied: boolean;
   readonly description: string;
   readonly label: string;
   readonly onCopy: () => void;
   readonly value: string;
+  readonly valueRef: (element: HTMLElement | null) => void;
 }) {
   return (
     <div className="as-share-secondary__row">
@@ -575,7 +594,7 @@ function ShareSecondaryLink({
         <strong>{label}</strong>
         <small>{description}</small>
       </span>
-      <code title={value}>{value}</code>
+      <code ref={valueRef} title={value}>{value}</code>
       <button
         aria-label={`Copy ${label.toLocaleLowerCase("en-US")} link`}
         className="as-icon-button"
