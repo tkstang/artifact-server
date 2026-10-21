@@ -154,10 +154,15 @@ export interface ReviewCommentSession {
   readonly repliesByThread: ReadonlyMap<string, readonly CommentReply[]>;
   readonly selectedThreadId: string | null;
   readonly selectThread: (threadId: string | null) => void;
+  /**
+   * Create a thread. Callers that can retry pass the compose attempt's stable
+   * idempotency key so a retry after a lost response replays, never duplicates.
+   */
   readonly submit: (
     body: string,
     anchor: ReviewAnchor | null,
     path: string | null,
+    idempotencyKey?: string,
   ) => Promise<boolean>;
   readonly threads: readonly CommentThread[];
   readonly unanchoredIds: readonly string[];
@@ -299,6 +304,7 @@ export function useReviewComments({
     body: string,
     anchor: ReviewAnchor | null,
     path: string | null,
+    idempotencyKey: string = crypto.randomUUID(),
   ): Promise<boolean> => {
     if (artifactId === null || projectId === "" || versionId === null) return false;
     setError(null);
@@ -310,7 +316,7 @@ export function useReviewComments({
           artifactId,
           versionId,
           {anchor: storedAnchor, body, path},
-          crypto.randomUUID(),
+          idempotencyKey,
         )
       );
       if (created.thread.versionId !== versionId) {
@@ -463,8 +469,8 @@ function NewThreadComposer({
         onBodyChange={draft.onBodyChange}
         onCancel={null}
         onDiscardDraft={draft.onDiscard}
-        onSubmit={async (body) => {
-          const saved = await session.submit(body, null, null);
+        onSubmit={async (body, idempotencyKey) => {
+          const saved = await session.submit(body, null, null, idempotencyKey);
           if (saved) draft.onPosted();
           return saved;
         }}
