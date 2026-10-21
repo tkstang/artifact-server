@@ -40,3 +40,13 @@ body {
   --primary: transparent;
   border: 1px solid var(--border);
 }
+
+/*
+ * Authored HTML renders as it would in its own browser tab, where a page with
+ * no background sits on a white canvas. The sandboxed document is transparent,
+ * so without this a dark app theme showed through behind dark page text.
+ * Markdown documents paint their own themed paper over it.
+ */
+iframe {
+  background: #ffffff;
+}
