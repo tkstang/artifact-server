@@ -32,7 +32,11 @@ import {
   useCommentPoll,
 } from "@/components/comments/comment-poll";
 import {formatTimestamp} from "@/lib/presentation";
-import {agentWorkOf, agentWorkSentence} from "@/components/dispatch/agent-work";
+import {
+  agentHoldsTheComment,
+  agentWorkOf,
+  agentWorkSentence,
+} from "@/components/dispatch/agent-work";
 import {bundleOfThreads} from "@/components/dispatch/dispatch-bundle";
 import {loadDispatchIndex} from "@/components/dispatch/dispatch-index";
 import {
@@ -49,24 +53,38 @@ import {
 } from "@/review-frame/protocol";
 
 const threadPageSize = 100;
+/** How long a resolved card stays in Open as "Resolved · Undo". */
+const resolveAcknowledgementMilliseconds = 6_000;
 const conversationLoadConcurrency = 6;
 
 /** Said while the last presence check failed: the old list may be wrong. */
 const presenceUnknownSummary = "Agent status unknown — the last check failed.";
 const presenceUnknownReason = "Can't send until agent status is known.";
 
+/** One line naming who can take comments: "Pi is connected". */
 function agentPresenceSummary(
   agents: readonly AgentPresence[] | null,
   stale: boolean,
 ): string {
   if (stale) return presenceUnknownSummary;
-  if (agents === null) return "Checking presence…";
-  const connectedCount = agents.filter((agent) => agent.connected).length;
-  const offlineCount = agents.length - connectedCount;
-  if (offlineCount === 0) {
-    return connectedCount === 0 ? "No agents connected" : `${connectedCount} connected`;
+  if (agents === null) return "Checking agents…";
+  const connected = agents.filter((agent) => agent.connected);
+  const offline = agents.filter((agent) => !agent.connected);
+  const [onlyConnected] = connected;
+  const lead = connected.length === 1 && onlyConnected !== undefined
+    ? `${onlyConnected.displayName} is connected`
+    : connected.length > 1
+      ? `${connected.length} agents connected`
+      : null;
+  const [onlyOffline] = offline;
+  if (lead === null) {
+    return offline.length === 1 && onlyOffline !== undefined
+      ? `${onlyOffline.displayName} is offline`
+      : offline.length === 0
+        ? "No agents connected"
+        : `No agents connected · ${offline.length} offline`;
   }
-  return `${connectedCount} connected · ${offlineCount} offline`;
+  return offline.length === 0 ? lead : `${lead} · ${offline.length} offline`;
 }
 
 function threadQuery(
@@ -151,7 +169,8 @@ async function loadConversations(
 export interface ReviewCommentSession {
   readonly artifactId: string | null;
   readonly annotations: readonly ReviewAnnotation[];
-  readonly changeState: (thread: CommentThread) => Promise<void>;
+  /** Resolve an open thread or reopen a resolved one; true once stored. */
+  readonly changeState: (thread: CommentThread) => Promise<boolean>;
   readonly createReply: (
     thread: CommentThread,
     body: string,
@@ -355,8 +374,8 @@ export function useReviewComments({
     }
   }, [artifactId, onVersionChanged, ownership, projectId, reload, versionId]);
 
-  const changeState = useCallback(async (thread: CommentThread): Promise<void> => {
-    if (artifactId === null || projectId === "") return;
+  const changeState = useCallback(async (thread: CommentThread): Promise<boolean> => {
+    if (artifactId === null || projectId === "") return false;
     setError(null);
     try {
       await ownership.own(() =>
@@ -365,10 +384,12 @@ export function useReviewComments({
         })
       );
       await reload();
+      return true;
     } catch (caught) {
       setError(
         caught instanceof Error ? caught : new Error("Comment state change failed."),
       );
+      return false;
     }
   }, [artifactId, ownership, projectId, reload]);
 
@@ -605,6 +626,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     AgentDispatch
   >>(new Map());
   const [sentLoading, setSentLoading] = useState(false);
+  // Threads just resolved from Open keep their place as an Undo line briefly.
+  const [acknowledged, setAcknowledged] = useState<ReadonlySet<string>>(new Set());
+  const acknowledgementTimers = useRef(new Map<string, number>());
   const [sentError, setSentError] = useState<Error | null>(null);
 
   const loadAgents = useCallback(async (): Promise<void> => {
@@ -664,6 +688,37 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     view === "sent" && session.artifactId !== null && versionId !== null,
   );
 
+  useEffect(() => {
+    const timers = acknowledgementTimers.current;
+    return () => {
+      for (const timer of timers.values()) window.clearTimeout(timer);
+    };
+  }, []);
+
+  const forgetAcknowledgement = (threadId: string): void => {
+    window.clearTimeout(acknowledgementTimers.current.get(threadId));
+    acknowledgementTimers.current.delete(threadId);
+    setAcknowledged((current) => {
+      const next = new Set(current);
+      next.delete(threadId);
+      return next;
+    });
+  };
+
+  const resolveFromOpen = async (thread: CommentThread): Promise<void> => {
+    if (!await session.changeState(thread)) return;
+    setAcknowledged((current) => new Set(current).add(thread.id));
+    acknowledgementTimers.current.set(thread.id, window.setTimeout(
+      () => forgetAcknowledgement(thread.id),
+      resolveAcknowledgementMilliseconds,
+    ));
+  };
+
+  const undoResolve = async (thread: CommentThread): Promise<void> => {
+    forgetAcknowledgement(thread.id);
+    await session.changeState(thread);
+  };
+
   const openThreads = session.threads.filter((thread) => thread.state === "open");
   const resolvedThreads = session.threads.filter((thread) => thread.state === "resolved");
   const visibleThreads = view === "sent"
@@ -671,7 +726,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     : view === "all"
       ? [...openThreads, ...resolvedThreads]
       : view === "open"
-        ? openThreads
+        ? session.threads.filter((thread) =>
+          thread.state === "open" || acknowledged.has(thread.id)
+        )
         : resolvedThreads;
   const visibleReplies = view === "sent" ? sentReplies : session.repliesByThread;
   const loadingVisible = view === "sent" ? sentLoading : session.loading;
@@ -729,12 +786,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     <div className="as-comments">
       {dispatchUndo.element}
       <div className="as-comments__agents">
-        <div>
-          <strong>Agents</strong>
-          <span data-stale={presenceStale ? "true" : undefined}>
-            {agentPresenceSummary(agents, presenceStale)}
-          </span>
-        </div>
+        <p data-stale={presenceStale ? "true" : undefined}>
+          {agentPresenceSummary(agents, presenceStale)}
+        </p>
         <div aria-label="Agent presence" role="group">
           {presenceStale ? null : agents?.map((agent) => (
             <PresenceAvatar agent={agent} key={agent.id} now={now} />
@@ -860,6 +914,33 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
         {visibleThreads.map((thread) => {
           const sentDispatch = view === "sent" ? dispatchByThread.get(thread.id) : undefined;
           const replies = visibleReplies.get(thread.id) ?? [];
+          if (view === "open" && thread.state === "resolved") {
+            return (
+              <li key={thread.id}>
+                <p className="as-comment-ack" role="status">
+                  <span>Resolved</span>
+                  <button
+                    className="as-button"
+                    onClick={() => void undoResolve(thread)}
+                    type="button"
+                  >
+                    Undo
+                  </button>
+                </p>
+              </li>
+            );
+          }
+          const lastReply = replies.at(-1);
+          const agentReplied = thread.state === "open" && lastReply !== undefined
+            && agentNames.has(lastReply.author.displayName);
+          const holder = sentDispatch !== undefined && agentHoldsTheComment(sentDispatch)
+            ? sentDispatch.agentDisplayName
+            : null;
+          const stateLine = agentReplied
+            ? `${lastReply.author.displayName} replied — check it and resolve`
+            : holder === null
+              ? null
+              : `With ${holder}`;
           const anchor = documentAnchorOf(thread);
           const anchored = anchor !== null;
           const quote = anchor === null ? "" : quotedPassage(anchor);
@@ -888,6 +969,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                   )}
                   <p>{thread.body}</p>
                   <footer>
+                    {stateLine === null ? null : (
+                      <p className="as-comment-card__state">{stateLine}</p>
+                    )}
                     <div className="as-comment-card__meta">
                       <span>
                         Updated <time dateTime={thread.updatedAt}>
@@ -945,7 +1029,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                           {canComment ? (
                             <button
                               className="as-button"
-                              onClick={() => void session.changeState(thread)}
+                              onClick={() => void (view === "open"
+                                ? resolveFromOpen(thread)
+                                : session.changeState(thread))}
                               type="button"
                             >
                               {thread.state === "open" ? "Resolve" : "Reopen"}

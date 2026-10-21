@@ -225,7 +225,7 @@ test.describe("Artifact Server Review comment cards", () => {
       await expect(page.getByRole("button", {name: "Sent (1)"}))
         .toHaveAttribute("aria-pressed", "true");
       await expect(page.getByRole("article").filter({hasText: "Please tighten the intro."}))
-        .toBeVisible();
+        .toContainText("With builder");
 
       // All keeps sent comments out (DSP-004) and says where they are.
       await page.getByRole("button", {exact: true, name: "All"}).click();
@@ -281,6 +281,46 @@ test.describe("Artifact Server Review comment cards", () => {
       await page.unroute(presenceRoute);
       await page.getByRole("button", {exact: true, name: "Reload"}).click();
       await expect(sendAll).toBeEnabled();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("resolving from Open leaves a short Undo that reopens the comment", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Resolve fixture</h1></html>",
+        idempotencyKey: "review-comment-resolve-undo",
+        name: "Resolve fixture",
+      });
+      const artifactId = published.body.artifact.id;
+      await createThreadOverApi(fixture, {
+        artifactId,
+        body: "Fix the heading.",
+        idempotencyKey: "review-comment-resolve-undo-thread",
+        versionId: published.body.version.id,
+      });
+      await localLogin(fixture);
+      const page = fixture.page;
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: published.body.version.id,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      const card = page.getByRole("article").filter({hasText: "Fix the heading."});
+      await card.getByRole("button", {exact: true, name: "Resolve"}).click();
+      const acknowledgement = page.locator(".as-comment-ack");
+      await expect(acknowledgement).toContainText("Resolved");
+      await expect(card).toHaveCount(0);
+      expect((await listThreadsOverApi(fixture, artifactId))[0]?.state).toBe("resolved");
+
+      await acknowledgement.getByRole("button", {name: "Undo"}).click();
+      await expect(card).toHaveAttribute("data-state", "open");
+      await expect(acknowledgement).toHaveCount(0);
+      expect((await listThreadsOverApi(fixture, artifactId))[0]?.state).toBe("open");
     } finally {
       await stopBrowserFixture(fixture);
     }

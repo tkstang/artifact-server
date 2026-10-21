@@ -9,9 +9,9 @@ export interface AgentWork {
   readonly total: number;
 }
 
-function holdsTheComment(dispatch: AgentDispatch | undefined): boolean {
-  return dispatch === undefined
-    || dispatch.state === "queued"
+/** True while a send's agent still has its comments: queued to delivered. */
+export function agentHoldsTheComment(dispatch: AgentDispatch): boolean {
+  return dispatch.state === "queued"
     || dispatch.state === "claimed"
     || dispatch.state === "delivered";
 }
@@ -26,7 +26,7 @@ export function agentWorkOf(
   for (const thread of sentThreads) {
     if (thread.state !== "open") continue;
     const dispatch = dispatchByThread.get(thread.id);
-    if (!holdsTheComment(dispatch)) {
+    if (dispatch !== undefined && !agentHoldsTheComment(dispatch)) {
       stalled += 1;
       continue;
     }

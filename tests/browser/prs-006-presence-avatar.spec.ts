@@ -210,7 +210,7 @@ test.describe("PRS-006 presence avatar", () => {
       fixture.clock.advance(100_000);
       await expect(page.getByRole("button", {name: "pres — Disconnected"}))
         .toBeVisible({timeout: 30_000});
-      await expect(page.getByText("0 connected · 1 offline", {exact: true}))
+      await expect(page.getByText("pres is offline", {exact: true}))
         .toBeVisible();
 
       // Add another open comment so the disconnected default and replacement
