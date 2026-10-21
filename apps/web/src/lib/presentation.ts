@@ -65,6 +65,15 @@ export function errorMessage(error: Error): string {
   return error.message;
 }
 
+/**
+ * Names one version for readers: "Version 3" when it is the current one,
+ * "Version 2 of 3" when a newer version exists. A total that is not loaded
+ * yet (0) is left out.
+ */
+export function versionLabel(number: number, total: number, current: boolean): string {
+  return current || total < number ? `Version ${number}` : `Version ${number} of ${total}`;
+}
+
 /** Converts an access-setting value into the product's visible term. */
 export function accessSettingLabel(value: "account_required" | "public_link"): string {
   return value === "account_required" ? "Account required" : "Public link";

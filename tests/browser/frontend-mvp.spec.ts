@@ -134,6 +134,8 @@ test.describe("Artifact Server frontend MVP", () => {
       ]);
       await fixture.page.keyboard.press("Escape");
       await expect(shortcutMap).toBeHidden();
+      // The workspace inspector opens on Comments; access lives in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       const accessRow = fixture.page.locator(".as-inspector-row").filter({
         hasText: "access",
       });
@@ -1100,6 +1102,8 @@ test.describe("Artifact Server frontend MVP", () => {
         })}`,
       );
 
+      // The workspace inspector opens on Comments; the access row is in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       const headerActions = fixture.page.locator(".as-preview-header__actions");
       const headerShare = headerActions.getByRole("button", {exact: true, name: "Share"});
       const fullScreen = headerActions.getByRole("button", {name: "Full screen"});
@@ -1422,6 +1426,8 @@ test.describe("Artifact Server frontend MVP", () => {
       await localLogin(fixture);
       await expect(fixture.page.getByRole("heading", {name: "Workflow fixture"})).toBeVisible();
 
+      // The workspace inspector opens on Comments; tags live in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       await fixture.page.getByRole("button", {name: "Edit tags"}).click();
       await fixture.page
         .getByRole("textbox", {name: "Tags"})
@@ -1504,6 +1510,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.goto(
         `${fixture.server.baseUrl}/review?project=prj_default&artifact=${first.body.artifact.id}`,
       );
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       await fixture.page.getByRole("button", {name: "Delete artifact"}).click();
       await fixture.page.getByRole("textbox", {name: "Artifact name"}).fill("Workflow fixture");
       await fixture.page.getByRole("button", {name: "Delete artifact", exact: true}).last().click();

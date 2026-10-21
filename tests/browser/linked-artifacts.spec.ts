@@ -173,6 +173,8 @@ test.describe("Linked artifacts", () => {
       await expect(
         fixture.page.getByRole("heading", {name: "Quarterly report"}),
       ).toBeVisible();
+      // The workspace inspector opens on Comments; the binding is in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       await expect(fixture.page.getByRole("heading", {name: "Linked source"})).toBeVisible();
       await expect(fixture.page.getByText(sourcePath, {exact: true})).toBeVisible();
       await expect(fixture.page.getByText("In sync", {exact: true})).toBeVisible();
@@ -223,6 +225,7 @@ test.describe("Linked artifacts", () => {
       await expect(
         fixture.page.getByRole("heading", {name: "Quarterly report"}),
       ).toBeVisible();
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       const liveButton = fixture.page.getByRole("button", {name: "Open live file"});
       await expect(liveButton).toBeVisible();
 

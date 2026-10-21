@@ -66,6 +66,7 @@ import {
   formatTimestamp,
   sourceDriftDescription,
   sourceFreshnessLabel,
+  versionLabel,
 } from "@/lib/presentation";
 import {useHorizontalOverflow} from "@/lib/use-horizontal-overflow";
 import {reviewAnchorSchema} from "@/review-frame/protocol";
@@ -582,7 +583,8 @@ function ArtifactReview({
   const [selectedVersion, setSelectedVersion] = useState<ArtifactVersion | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<Error | null>(null);
-  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("details");
+  // The workspace opens on the conversation; Details is one tab away.
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("comments");
   const [catalogOpen, setCatalogOpen] = useState(() => readInitialCatalogOpen(initialLocation));
   const [inspectorOpen, setInspectorOpen] = useState(readInitialInspectorOpen);
   const [opening, setOpening] = useState(false);
@@ -2133,6 +2135,7 @@ function ArtifactReview({
                 onTagsChange={changeTags}
                 onTombstone={tombstoneArtifact}
                 version={selectedVersion}
+                versionCount={versions.length}
               />
             ) : inspectorTab === "comments" ? (
               <ReviewCommentsInspector
@@ -2249,6 +2252,7 @@ function DetailsInspector({
   onTagsChange,
   onTombstone,
   version,
+  versionCount,
 }: {
   readonly canManage: boolean;
   readonly details: ArtifactDetails;
@@ -2258,28 +2262,28 @@ function DetailsInspector({
   readonly onTagsChange: (tags: readonly string[]) => Promise<void>;
   readonly onTombstone: () => Promise<boolean>;
   readonly version: ArtifactVersion;
+  readonly versionCount: number;
 }) {
   const linkedDriftDescription = details.sourceBinding === undefined
     ? null
     : sourceDriftDescription(details.sourceBinding.status, "captured");
   return (
     <div className="as-inspector-stack">
-      <InspectorSection count={5} title="Artifact">
-        <InspectorRow label="name" title={details.artifact.name} value={details.artifact.name} />
+      <InspectorSection count={4} title="Artifact">
+        <InspectorRow label="Name" title={details.artifact.name} value={details.artifact.name} />
         <InspectorRow
-          label="access"
+          label="Access"
           value={<AccessPill access={details.artifact.accessSetting} />}
         />
-        <InspectorRow label="created" title={formatTimestamp(details.artifact.createdAt)} value={formatTimestamp(details.artifact.createdAt)} />
-        <InspectorRow label="artifact id" mono title={details.artifact.id} value={details.artifact.id} />
-        <InspectorRow label="project id" mono title={details.artifact.projectId} value={details.artifact.projectId} />
-      </InspectorSection>
-      <InspectorSection count={5} title="Version">
-        <InspectorRow label="number" title={String(version.version.number)} value={String(version.version.number)} />
-        <InspectorRow label="saved" title={formatTimestamp(version.version.createdAt)} value={formatTimestamp(version.version.createdAt)} />
-        <InspectorRow label="entry" mono title={version.manifest.entryPath} value={version.manifest.entryPath} />
-        <InspectorRow label="routing" title={version.version.routingMode} value={version.version.routingMode} />
-        <InspectorRow label="version id" mono title={version.version.id} value={version.version.id} />
+        <InspectorRow
+          label="Version"
+          value={versionLabel(
+            version.version.number,
+            versionCount,
+            version.version.id === details.artifact.currentVersionId,
+          )}
+        />
+        <InspectorRow label="Saved" title={formatTimestamp(version.version.createdAt)} value={formatTimestamp(version.version.createdAt)} />
       </InspectorSection>
       <TagsInspector
         artifact={details.artifact}
@@ -2288,8 +2292,8 @@ function DetailsInspector({
       />
       {details.sourceBinding === undefined ? null : (
         <InspectorSection count={2} title="Linked source">
-          <InspectorRow label="state" value={sourceFreshnessLabel(details.sourceBinding.status)} />
-          <InspectorRow label="path" mono value={details.sourceBinding.path} />
+          <InspectorRow label="State" value={sourceFreshnessLabel(details.sourceBinding.status)} />
+          <InspectorRow label="File" mono value={details.sourceBinding.path} />
           {linkedDriftDescription === null ? null : (
             <p className="as-inspector-empty">{linkedDriftDescription}</p>
           )}
@@ -2307,6 +2311,19 @@ function DetailsInspector({
           </div>
         </InspectorSection>
       )}
+      <section className="as-inspector-section as-inspector-technical">
+        <details>
+          <summary>Technical details</summary>
+          <div className="as-inspector-section__body">
+            <InspectorRow label="Created" title={formatTimestamp(details.artifact.createdAt)} value={formatTimestamp(details.artifact.createdAt)} />
+            <InspectorRow label="Artifact ID" mono title={details.artifact.id} value={details.artifact.id} />
+            <InspectorRow label="Project ID" mono title={details.artifact.projectId} value={details.artifact.projectId} />
+            <InspectorRow label="Version ID" mono title={version.version.id} value={version.version.id} />
+            <InspectorRow label="Entry file" mono title={version.manifest.entryPath} value={version.manifest.entryPath} />
+            <InspectorRow label="Routing" title={version.version.routingMode} value={version.version.routingMode} />
+          </div>
+        </details>
+      </section>
       {canManage ? (
         <InspectorSection count={0} title="Danger zone">
           <TombstoneArtifactControl artifact={details.artifact} onConfirm={onTombstone} />

@@ -140,3 +140,58 @@ body {
   outline: 2px solid var(--as-iris);
   outline-offset: -2px;
 }
+
+/* Details: human fields first, technical identifiers behind a disclosure,
+   and a quiet outline button in the danger zone. */
+.as-inspector-row {
+  font-size: 0.8125rem;
+  grid-template-columns: 6rem minmax(0, 1fr);
+}
+
+.as-inspector-technical > details > summary {
+  align-items: center;
+  color: var(--as-subtle);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  list-style: none;
+  min-height: 2.45rem;
+  padding: 0 0.75rem;
+}
+
+.as-inspector-technical > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.as-inspector-technical > details > summary::before {
+  border-bottom: 1.5px solid currentcolor;
+  border-right: 1.5px solid currentcolor;
+  content: "";
+  height: 0.4rem;
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+  width: 0.4rem;
+}
+
+.as-inspector-technical > details[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.as-inspector-technical > details > summary:hover {
+  color: var(--as-text);
+}
+
+.as-inspector-section .as-button--danger {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--as-love) 45%, var(--as-border));
+  color: var(--as-love);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.as-inspector-section .as-button--danger:hover:not(:disabled) {
+  background: var(--as-love-soft);
+  color: var(--as-love);
+}
