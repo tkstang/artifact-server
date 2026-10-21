@@ -26,6 +26,7 @@ import {Label} from "@/components/ui/label";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Textarea} from "@/components/ui/textarea";
 import {errorMessage, formatRelativeTime} from "@/lib/presentation";
+import {cn} from "@/lib/utils";
 
 function annotationCount(count: number): string {
   return count === 1 ? "1 annotation" : `${count} annotations`;
@@ -444,7 +445,11 @@ export function SendToAgentControl({
               </div>
             )}
             <button
-              className="border-t p-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
+              className={cn(
+                "p-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary",
+                // A divider only separates the note from agents listed above it.
+                menuAgents.length > 0 && "border-t",
+              )}
               onClick={() => {
                 setMenuOpen(false);
                 changeNoteOpen(true);
