@@ -1,6 +1,6 @@
 import {expect, test} from "@playwright/test";
 
-import {ApiClient} from "../support/agent-dispatch.js";
+import {ApiClient, issueApiKey, signInAdministrator} from "../support/agent-dispatch.js";
 import {publishNew} from "../support/publishing.js";
 import {connectAgentOverApi} from "./agent-api.js";
 import {
@@ -173,6 +173,62 @@ test.describe("Artifact Server Review comment cards", () => {
       expect(sent.keys[1]).toBe(sent.keys[0]);
       const stored = await listThreadsOverApi(fixture, artifactId);
       expect(stored.find(({id}) => id === thread.id)?.replyCount).toBe(1);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("a registered agent's reply is attributed by its principal, whatever its key is named", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Attribution fixture</h1></html>",
+        idempotencyKey: "review-comment-attribution-fixture",
+        name: "Attribution fixture",
+      });
+      const artifactId = published.body.artifact.id;
+      const thread = await createThreadOverApi(fixture, {
+        artifactId,
+        body: "Review this.",
+        idempotencyKey: "review-comment-attribution-thread",
+        versionId: published.body.version.id,
+      });
+      // The key's name is what the API records as the reply's author; the
+      // registration it connected with is named Pi.
+      const cookies = await signInAdministrator(fixture.server, fixture.installation);
+      const agent = new ApiClient(fixture.server, await issueApiKey(
+        fixture.server,
+        cookies,
+        ["agent:connect", "artifact:read", "comment:write"],
+        "Pi production key",
+      ));
+      await agent.registerAgent({
+        agentSessionId: "attribution-session",
+        connectionKey: "attribution-connection",
+        displayName: "Pi",
+        workingDirectory: "/work/attribution",
+      });
+      const reply = await agent.fetch(
+        `/api/v1/artifacts/${artifactId}/comments/${thread.id}/replies?projectId=prj_default`,
+        {body: JSON.stringify({body: "I fixed this."}), idempotencyKey: "review-comment-attribution-reply", method: "POST"},
+      );
+      expect(reply.status).toBe(201);
+
+      await localLogin(fixture);
+      await fixture.page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: published.body.version.id,
+      })}`);
+      await fixture.page.getByRole("tab", {name: /Comments/u}).click();
+      const card = fixture.page.locator(".as-comment-card").filter({hasText: "Review this."});
+      const replies = card.locator(".as-comment-replies");
+      await expect(replies).toContainText("Pi production key");
+      await expect(replies.locator(".as-comment-author__agent")).toHaveText("Agent");
+      // The human who opened the thread is not an agent.
+      await expect(card.locator(":scope > header .as-comment-author__agent")).toHaveCount(0);
+      await expect(card.locator(".as-comment-card__state")).toContainText("Pi replied");
     } finally {
       await stopBrowserFixture(fixture);
     }

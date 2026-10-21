@@ -746,9 +746,11 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
   const readFailed = session.loadError !== null && session.threads.length === 0;
   const sentReadFailed = sentError !== null && sentThreads.length === 0;
   const agentWork = agentWorkOf(sentThreads, dispatchByThread);
-  // Commenting keys are service principals too, so only a registered agent's
-  // name earns the Agent tag.
-  const agentNames = new Set(agents?.map((agent) => agent.displayName) ?? []);
+  // Commenting keys are service principals too, so only an author whose
+  // principal registered as an agent earns the Agent tag; names prove nothing.
+  const agentsByPrincipal = new Map(
+    agents?.map((agent) => [agent.principalId, agent]) ?? [],
+  );
   const openSentCount = sentThreads.filter((thread) => thread.state === "open").length;
   const now = Date.now();
 
@@ -940,13 +942,14 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
             );
           }
           const lastReply = replies.at(-1);
-          const agentReplied = thread.state === "open" && lastReply !== undefined
-            && agentNames.has(lastReply.author.displayName);
+          const replyingAgent = thread.state === "open" && lastReply !== undefined
+            ? agentsByPrincipal.get(lastReply.author.principalId)
+            : undefined;
           const holder = sentDispatch !== undefined && agentHoldsTheComment(sentDispatch)
             ? sentDispatch.agentDisplayName
             : null;
-          const stateLine = agentReplied
-            ? `${lastReply.author.displayName} replied — check it and resolve`
+          const stateLine = replyingAgent !== undefined
+            ? `${replyingAgent.displayName} replied — check it and resolve`
             : holder === null
               ? null
               : `With ${holder}`;
@@ -964,7 +967,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                 <header>
                   <CommentAuthor
                     displayName={thread.author.displayName}
-                    isAgent={agentNames.has(thread.author.displayName)}
+                    isAgent={agentsByPrincipal.has(thread.author.principalId)}
                   />
                   {sentDispatch !== undefined
                     ? <DispatchStateChip state={sentDispatch.state} />
@@ -1064,7 +1067,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                         <ReviewReply
                           canDeleteAny={canDeleteAny}
                           canMutate={canComment}
-                          isAgent={agentNames.has(reply.author.displayName)}
+                          isAgent={agentsByPrincipal.has(reply.author.principalId)}
                           key={reply.id}
                           onDelete={session.deleteReply}
                           onUpdate={session.updateReply}
