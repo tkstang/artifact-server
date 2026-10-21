@@ -1796,7 +1796,7 @@ function ArtifactReview({
                     type="button"
                   >
                     <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
-                    Comments
+                    <span className="as-button__label">Comments</span>
                     {commentCountKnown ? <span
                       className="as-focus-controls__count"
                       title={`${openCommentCount} open comment${openCommentCount === 1 ? "" : "s"} on this version, not yet sent to an agent`}
@@ -1825,7 +1825,7 @@ function ArtifactReview({
                     type="button"
                   >
                     <HugeiconsIcon aria-hidden="true" icon={ArrowShrinkIcon} strokeWidth={1.8} />
-                    Exit full screen
+                    <span className="as-button__label">Exit full screen</span>
                   </button>
                   <button
                     aria-label="Hide viewer controls"

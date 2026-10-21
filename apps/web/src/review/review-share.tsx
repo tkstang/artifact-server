@@ -201,6 +201,7 @@ export function ReviewShareControl({
             aria-label="Share"
             className={triggerClassName}
             disabled={details === null || selectedVersion === null}
+            title="Share"
             type="button"
           />
         )}

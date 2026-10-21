@@ -400,11 +400,36 @@ body {
   justify-content: flex-end;
 }
 
-/* On phones the focus bar wraps to a third row with the identity added;
-   the Markdown reader starts below it. */
+/* On phones the focus bar keeps to two rows: the identity on its own row,
+   then the controls as icons. Labels stay in the accessibility tree (the
+   buttons keep their names) and in each button's tooltip. The Markdown
+   reader starts below the bar. */
 @media (max-width: 600px) {
+  .as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] .as-focus-controls__identity {
+    flex: 1 0 100%;
+    min-height: 2rem;
+  }
+
+  .as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] .as-focus-controls__identity strong {
+    max-width: none;
+  }
+
+  .as-focus-controls .as-focus-controls__button {
+    min-width: 2.25rem;
+    padding-inline: 0.5rem;
+  }
+
+  .as-focus-controls .as-focus-controls__button .as-button__label {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
   .as-app[data-focus-mode="true"] .as-preview-panel__body[data-preview-kind="markdown"] {
-    padding-top: 140px;
+    padding-top: 112px;
   }
 }
 

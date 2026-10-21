@@ -324,6 +324,14 @@ test.describe("Review shell", () => {
       const identity = fixture.page.locator(".as-focus-controls__identity");
       await expect(identity).toBeInViewport({ratio: 1});
       await expect(identity.locator(".as-version-chip")).toBeInViewport({ratio: 1});
+      // The bar keeps to two rows (identity, then controls) over the document.
+      const rows = await focusBar.evaluate((bar) => new Set(
+        [...bar.children]
+          .map((child) => child.getBoundingClientRect())
+          .filter((box) => box.width > 0 && box.height > 0)
+          .map((box) => Math.round(box.top)),
+      ).size);
+      expect(rows).toBeLessThanOrEqual(2);
     } finally {
       await stopBrowserFixture(fixture);
     }
