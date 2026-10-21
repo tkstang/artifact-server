@@ -529,7 +529,12 @@ function NewThreadComposer({
         key={`new-thread-${versionId}-${draft.restored ? "draft" : "empty"}`}
         label="Add a comment"
         maximumCharacters={maximumCommentBodyCharacters}
-        onBodyChange={draft.onBodyChange}
+        onBodyChange={(body) => {
+          draft.onBodyChange(body);
+          // A blank body clears the draft and its anchor; drop the quote too,
+          // so new text is not shown under a passage it will not be posted on.
+          if (body.trim() === "") setQuote("");
+        }}
         onCancel={null}
         onDiscardDraft={() => {
           draft.onDiscard();

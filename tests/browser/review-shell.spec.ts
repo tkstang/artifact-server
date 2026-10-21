@@ -155,6 +155,43 @@ test.describe("Review shell", () => {
     }
   });
 
+  test("DRF-001-F: clearing a restored anchored draft drops its quote and posts a general comment", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await localLogin(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await loseFirstCommittedCommentResponse(fixture.page);
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const reviewFrame = fixture.page.frameLocator(".as-artifact-frame");
+      const preview = reviewFrame.frameLocator("iframe");
+      await preview.locator("#shell-target").hover();
+      await preview.locator("#shell-target").click();
+      await reviewFrame.getByPlaceholder("Add a comment...").fill("Name the owner of this heading.");
+      await reviewFrame.getByRole("button", {name: "Save"}).click();
+
+      const composer = fixture.page.getByLabel("Add a comment");
+      const newThread = fixture.page.locator("[data-new-thread-composer]");
+      await expect(newThread.locator("blockquote")).toHaveText("Shell preview content");
+
+      // Clearing the text discards the draft's anchor; the quote must go with it.
+      await composer.fill("");
+      await expect(newThread.locator("blockquote")).toHaveCount(0);
+      await composer.fill("A note on the whole document.");
+      await expect(newThread.locator("blockquote")).toHaveCount(0);
+      await fixture.page.getByRole("button", {name: "Post comment"}).click();
+      await expect(composer).toHaveValue("");
+      await expect(async () => {
+        const stored = await listThreadsOverApi(fixture, published.body.artifact.id);
+        const general = stored.find((thread) => thread.body === "A note on the whole document.");
+        expect(general?.anchor).toBeNull();
+        expect(general?.path).toBeNull();
+      }).toPass();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
   test("DRF-001-F: a lost in-document save padded with whitespace is retried from the panel as the same request", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {
