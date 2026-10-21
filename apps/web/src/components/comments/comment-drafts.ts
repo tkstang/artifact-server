@@ -31,7 +31,13 @@ export function draftKey(context: DraftContext): string {
     + `:${context.threadId ?? "new"}:${context.versionId ?? "-"}`;
 }
 
-const draftAnchorSchema = z.object({anchor: z.json(), path: z.string()});
+const draftAnchorSchema = z.object({
+  anchor: z.json(),
+  path: z.string(),
+  // The failed attempt's idempotency key and body: a retry of the unchanged
+  // text reuses the key, so a save whose response was lost is not duplicated.
+  retry: z.object({body: z.string(), key: z.string()}).optional(),
+});
 
 /**
  * Where a new-thread draft was anchored in the document. A failed
@@ -113,7 +119,11 @@ export function readDraftAnchor(context: DraftContext): DraftAnchor | null {
 export function writeAnchoredDraft(
   context: DraftContext,
   body: string,
-  anchor: {readonly anchor: unknown; readonly path: string},
+  anchor: {
+    readonly anchor: unknown;
+    readonly path: string;
+    readonly retry?: {readonly body: string; readonly key: string};
+  },
 ): void {
   if (body.trim() === "") return;
   const parsed = draftAnchorSchema.safeParse(anchor);

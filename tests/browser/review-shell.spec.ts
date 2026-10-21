@@ -116,13 +116,22 @@ test.describe("Review shell", () => {
       const published = await publishShellFixture(fixture);
       await localLogin(fixture);
       await fixture.page.setViewportSize({height: 900, width: 1440});
+      // The first save reaches the server and is stored, but its response is
+      // lost: the retry must reuse the key so the comment is not duplicated.
       let failures = 0;
+      const keys: string[] = [];
       await fixture.page.route(/\/versions\/[^/]+\/comments\?/u, async (route) => {
-        if (route.request().method() !== "POST" || failures > 0) {
+        if (route.request().method() !== "POST") {
+          await route.continue();
+          return;
+        }
+        keys.push(route.request().headers()["idempotency-key"] ?? "");
+        if (failures > 0) {
           await route.continue();
           return;
         }
         failures += 1;
+        await route.fetch();
         await route.abort("connectionreset");
       });
       await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
@@ -143,6 +152,8 @@ test.describe("Review shell", () => {
         expect(stored[0]?.anchor).toMatchObject({originalText: "Shell preview content"});
       }).toPass();
       expect(failures).toBe(1);
+      expect(keys).toHaveLength(2);
+      expect(keys[1]).toBe(keys[0]);
     } finally {
       await stopBrowserFixture(fixture);
     }

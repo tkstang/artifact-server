@@ -691,14 +691,16 @@ function ArtifactReview({
     };
   // A new-thread draft restored from a failed in-document save still carries
   // its anchor; posting it from the sidebar composer keeps that anchor.
-  const submitWithDraftAnchor: typeof comments.submit = (body, anchor, path) => {
+  const submitWithDraftAnchor: typeof comments.submit = (body, anchor, path, idempotencyKey) => {
     const kept = anchor === null && newThreadDraftContext !== null
       ? readDraftAnchor(newThreadDraftContext)
       : null;
     const keptAnchor = kept === null ? null : reviewAnchorSchema.safeParse(kept.anchor);
+    // Unchanged text retries the failed in-document attempt under its key.
+    const keptKey = kept?.retry?.body === body ? kept.retry.key : idempotencyKey;
     const posted = keptAnchor?.success === true && kept !== null
-      ? comments.submit(body, keptAnchor.data, kept.path)
-      : comments.submit(body, anchor, path);
+      ? comments.submit(body, keptAnchor.data, kept.path, keptKey)
+      : comments.submit(body, anchor, path, idempotencyKey);
     return posted.then((saved) => {
       if (saved) countPostedComment();
       return saved;
@@ -2020,7 +2022,8 @@ function ArtifactReview({
                   }
                 }}
                 onSubmitAnnotation={async (body, anchor, path) => {
-                  const saved = await comments.submit(body, anchor, path);
+                  const idempotencyKey = crypto.randomUUID();
+                  const saved = await comments.submit(body, anchor, path, idempotencyKey);
                   if (!saved && newThreadDraftContext !== null && selectedVersionId !== null) {
                     // The in-frame composer discards its text on failure; keep
                     // it, with its anchor, as this version's new-thread draft
@@ -2028,7 +2031,11 @@ function ArtifactReview({
                     if (anchor === null) {
                       writeDraft(newThreadDraftContext, body);
                     } else {
-                      writeAnchoredDraft(newThreadDraftContext, body, {anchor, path});
+                      writeAnchoredDraft(newThreadDraftContext, body, {
+                        anchor,
+                        path,
+                        retry: {body, key: idempotencyKey},
+                      });
                     }
                     setRestoredDraftGeneration((current) => current + 1);
                     setInspectorTab("comments");
