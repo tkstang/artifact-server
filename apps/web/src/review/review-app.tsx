@@ -796,6 +796,11 @@ function ArtifactReview({
   // An empty project says so once, in the catalog; the canvas and the
   // inspector stay quiet instead of repeating "nothing selected".
   const projectEmpty = catalogEmpty && !catalogFiltered && selectedArtifactId === null;
+  // With nothing published there is nothing to inspect: the inspector closes
+  // rather than show empty tabs beside the empty catalog.
+  useEffect(() => {
+    if (projectEmpty) setInspectorOpen(false);
+  }, [projectEmpty]);
   const loadArtifacts = useCallback(async (
     cursor: string | null,
     replace: boolean,
@@ -1995,7 +2000,16 @@ function ArtifactReview({
               <div className="as-preview-error" role="alert">{failureMessage(detailError)}</div>
             )}
             {selectedArtifactId === null ? (
-              projectEmpty ? null : <PreviewWelcome />
+              projectEmpty ? (
+                <p className="as-preview-empty-hint">
+                  Nothing is published here yet.{" "}
+                  {catalogOpen ? "The catalog shows how to publish the first artifact." : (
+                    <button className="as-link-button" onClick={() => setCatalogOpen(true)} type="button">
+                      Open the catalog to publish the first one.
+                    </button>
+                  )}
+                </p>
+              ) : <PreviewWelcome />
             ) : detailLoading && details === null ? (
               <PreviewWelcome description="Loading the artifact." title="Opening artifact" />
             ) : reviewTargetUnavailable ? (

@@ -442,6 +442,33 @@ body {
   width: 100%;
 }
 
+/* An empty project explains itself in the catalog; the canvas carries one
+   quiet line pointing there. */
+.as-preview-empty-hint {
+  color: var(--as-muted);
+  font-size: 0.875rem;
+  left: 50%;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 24rem;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2rem);
+}
+
+.as-link-button {
+  background: none;
+  border: 0;
+  color: var(--as-iris);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* Empty and error states: one plain message on the canvas, with a next step. */
 .as-preview-welcome {
   background: transparent;
