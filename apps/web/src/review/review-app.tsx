@@ -573,6 +573,7 @@ function ArtifactReview({
   const [focusControlsInstant, setFocusControlsInstant] = useState(false);
   const [htmlAnnotateModeActive, setHtmlAnnotateModeActive] = useState(true);
   const [homeOpen, setHomeOpen] = useState(false);
+  const [previewRetryToken, setPreviewRetryToken] = useState(0);
   const focusCommentsButtonRef = useRef<HTMLButtonElement>(null);
   const inspectorTabListRef = useRef<HTMLDivElement>(null);
   const focusControlsRestoreRef = useRef<HTMLButtonElement>(null);
@@ -1905,6 +1906,7 @@ function ArtifactReview({
                 opening={opening}
                 projectId={projectId}
                 readOnly={!canComment}
+                retryToken={previewRetryToken}
                 selectedThreadId={comments.selectedThreadId}
                 selectedPath={selectedPath}
                 version={selectedVersion}
@@ -1955,9 +1957,10 @@ function ArtifactReview({
               <button
                 className="as-button as-preview-footer__reload"
                 disabled={comments.loading || selectedVersion === null}
-                onClick={() => void (
-                  commentsInspectorRef.current?.reload() ?? comments.reload()
-                )}
+                onClick={() => {
+                  setPreviewRetryToken((current) => current + 1);
+                  void (commentsInspectorRef.current?.reload() ?? comments.reload());
+                }}
                 type="button"
               >
                 <HugeiconsIcon aria-hidden="true" icon={RefreshIcon} strokeWidth={1.8} />

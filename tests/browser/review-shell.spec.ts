@@ -78,4 +78,34 @@ test.describe("Review shell", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("CMT-018-F: Reload recovers a preview whose lease failed", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await localLogin(fixture);
+      // The lease keeps failing until the reader asks for a reload.
+      let leaseAvailable = false;
+      await fixture.page.route(/\/preview-leases\?/u, async (route) => {
+        if (leaseAvailable) {
+          await route.continue();
+          return;
+        }
+        await route.fulfill({
+          contentType: "application/json",
+          json: {error: {code: "INTERNAL_ERROR", message: "Preview storage is briefly unavailable."}},
+          status: 503,
+        });
+      });
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      await expect(fixture.page.getByRole("heading", {name: "Preview unavailable"})).toBeVisible();
+
+      leaseAvailable = true;
+      await fixture.page.locator(".as-preview-footer").getByRole("button", {name: "Reload"}).click();
+      const preview = fixture.page.frameLocator(".as-artifact-frame").frameLocator("iframe");
+      await expect(preview.getByRole("heading", {name: "Shell preview content"})).toBeVisible();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });

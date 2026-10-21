@@ -51,6 +51,7 @@ export function ReviewPreview({
   opening,
   projectId,
   readOnly,
+  retryToken,
   selectedThreadId,
   selectedPath,
   version,
@@ -72,6 +73,8 @@ export function ReviewPreview({
   readonly opening: boolean;
   readonly projectId: string;
   readonly readOnly: boolean;
+  /** Changes when the reader asks to reload; a failed preview tries again. */
+  readonly retryToken: number;
   readonly selectedThreadId: string | null;
   readonly selectedPath: string | null;
   readonly version: ArtifactVersion | null;
@@ -126,6 +129,7 @@ export function ReviewPreview({
         onUnanchoredChange={onUnanchoredChange}
         projectId={projectId}
         readOnly={readOnly}
+        retryToken={retryToken}
         selectedThreadId={selectedThreadId}
         version={version}
       />
@@ -139,6 +143,7 @@ export function ReviewPreview({
         entry={entry}
         key={identity}
         kind="image"
+        retryToken={retryToken}
         onProbe={() => api.probeVersionMedia(
           projectId,
           artifactId,
@@ -162,6 +167,7 @@ export function ReviewPreview({
         entry={entry}
         key={identity}
         kind="video"
+        retryToken={retryToken}
         onProbe={() => api.probeVersionMedia(
           projectId,
           artifactId,
@@ -203,6 +209,7 @@ function HtmlPreview({
   onUnanchoredChange,
   projectId,
   readOnly,
+  retryToken,
   selectedThreadId,
   version,
 }: {
@@ -223,15 +230,23 @@ function HtmlPreview({
   readonly onUnanchoredChange: (threadIds: readonly string[]) => void;
   readonly projectId: string;
   readonly readOnly: boolean;
+  readonly retryToken: number;
   readonly selectedThreadId: string | null;
   readonly version: ArtifactVersion;
 }) {
+  const [attempt, setAttempt] = useState(0);
   const [previewDocument, setPreviewDocument] = useState<PreviewDocument | null>(null);
   const [frameReady, setFrameReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const initialisedRef = useRef(false);
+  const retry = useCallback((): void => {
+    setError(null);
+    setLoading(true);
+    setAttempt((current) => current + 1);
+  }, []);
+  useRetryOnReload(retryToken, error !== null, retry);
 
   const postToFrame = useCallback((message: HostMessage): void => {
     const frame = frameRef.current?.contentWindow;
@@ -281,7 +296,7 @@ function HtmlPreview({
     return () => {
       current = false;
     };
-  }, [artifactId, entry.path, markdown, projectId, version.manifest.entries, version.version.id]);
+  }, [artifactId, attempt, entry.path, markdown, projectId, version.manifest.entries, version.version.id]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<unknown>): void => {
@@ -404,6 +419,7 @@ function HtmlPreview({
         actions={actions}
         description={error.message}
         mediaType={entry.mediaType}
+        onRetry={retry}
         path={entry.path}
         size={entry.size}
         title="Preview unavailable"
@@ -434,6 +450,7 @@ function NativeMediaPreview({
   entry,
   kind,
   onProbe,
+  retryToken,
   source,
 }: {
   readonly actions: PreviewActions;
@@ -441,10 +458,16 @@ function NativeMediaPreview({
   readonly entry: PreviewEntry;
   readonly kind: "image" | "video";
   readonly onProbe: () => Promise<void>;
+  readonly retryToken: number;
   readonly source: string;
 }) {
   const [status, setStatus] = useState<"error" | "loading" | "ready">("loading");
   const [retry, setRetry] = useState(0);
+  const retryMedia = useCallback((): void => {
+    setRetry((current) => current + 1);
+    setStatus("loading");
+  }, []);
+  useRetryOnReload(retryToken, status === "error", retryMedia);
   const mountedRef = useRef(true);
   const probeInFlightRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -481,10 +504,7 @@ function NativeMediaPreview({
         actions={actions}
         description={`This browser could not decode or deliver the declared ${entry.mediaType} file.`}
         mediaType={entry.mediaType}
-        onRetry={() => {
-          setRetry((current) => current + 1);
-          setStatus("loading");
-        }}
+        onRetry={retryMedia}
         path={entry.path}
         size={entry.size}
         title={`${kind === "image" ? "Image" : "Video"} preview unavailable`}
@@ -524,6 +544,16 @@ function NativeMediaPreview({
       ) : null}
     </div>
   );
+}
+
+/** Retry a failed preview when the reader's reload token changes; a healthy one is left alone. */
+function useRetryOnReload(retryToken: number, failed: boolean, retry: () => void): void {
+  const seenTokenRef = useRef(retryToken);
+  useEffect(() => {
+    if (seenTokenRef.current === retryToken) return;
+    seenTokenRef.current = retryToken;
+    if (failed) retry();
+  }, [failed, retry, retryToken]);
 }
 
 function mediaTypeEssence(mediaType: string): string {
