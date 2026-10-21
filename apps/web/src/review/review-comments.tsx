@@ -509,6 +509,7 @@ function NewThreadComposer({
         cancelLabel={null}
         collapsible
         draftRestored={draft.restored}
+        idempotencyKeyFor={draft.attemptKey}
         initialBody={draft.initialBody}
         inputId={`review-new-thread-${versionId}`}
         key={`new-thread-${versionId}-${draft.restored ? "draft" : "empty"}`}
@@ -569,6 +570,7 @@ function ReplyComposer({
       <CommentComposer
         cancelLabel="Cancel"
         draftRestored={draft.restored}
+        idempotencyKeyFor={draft.attemptKey}
         initialBody={replyBody}
         inputId={`review-reply-${thread.id}`}
         label="Reply"

@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
  *
  * One mounted composer is one compose attempt: its idempotency key is minted
  * on the first submission and reused for every retry until the server accepts
- * the text, so a retried create can never duplicate a comment.
+ * the text, so a retried create can never duplicate a comment. A drafted
+ * composer takes its key from the draft instead, which outlives a remount.
  *
  * Every composer speaks the same way: an "Add a comment…" style prompt and
  * Cmd/Ctrl+Enter to submit. A collapsible one rests as a one-line field and
@@ -19,6 +20,7 @@ export function CommentComposer({
   cancelLabel,
   collapsible = false,
   draftRestored = false,
+  idempotencyKeyFor,
   initialBody,
   inputId,
   label,
@@ -35,6 +37,8 @@ export function CommentComposer({
   readonly collapsible?: boolean;
   /** True when `initialBody` came out of the draft store, not the caller. */
   readonly draftRestored?: boolean;
+  /** The key for posting this exact body, when a draft keeps attempts. */
+  readonly idempotencyKeyFor?: (body: string) => string;
   readonly initialBody: string;
   readonly inputId: string;
   readonly label: string;
@@ -57,9 +61,11 @@ export function CommentComposer({
 
   const submit = async () => {
     if (trimmed === "" || tooLong) return;
-    attemptKey.current ??= crypto.randomUUID();
+    const key = idempotencyKeyFor === undefined
+      ? (attemptKey.current ??= crypto.randomUUID())
+      : idempotencyKeyFor(trimmed);
     setPending(true);
-    const accepted = await onSubmit(trimmed, attemptKey.current);
+    const accepted = await onSubmit(trimmed, key);
     setPending(false);
     if (!accepted) return;
     attemptKey.current = null;

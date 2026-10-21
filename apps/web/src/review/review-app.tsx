@@ -44,8 +44,7 @@ import {motion} from "motion/react";
 import {
   readDraftAnchor,
   setDraftPrincipal,
-  writeAnchoredDraft,
-  writeDraft,
+  writeFailedDraft,
   type DraftContext,
 } from "@/components/comments/comment-drafts";
 import {useCommentPoll} from "@/components/comments/comment-poll";
@@ -690,16 +689,15 @@ function ArtifactReview({
       versionId: selectedVersionId,
     };
   // A new-thread draft restored from a failed in-document save still carries
-  // its anchor; posting it from the sidebar composer keeps that anchor.
+  // its anchor; posting it from the sidebar composer keeps that anchor. The
+  // composer's key is the draft's, so unchanged text retries that attempt.
   const submitWithDraftAnchor: typeof comments.submit = (body, anchor, path, idempotencyKey) => {
     const kept = anchor === null && newThreadDraftContext !== null
       ? readDraftAnchor(newThreadDraftContext)
       : null;
     const keptAnchor = kept === null ? null : reviewAnchorSchema.safeParse(kept.anchor);
-    // Unchanged text retries the failed in-document attempt under its key.
-    const keptKey = kept?.retry?.body === body ? kept.retry.key : idempotencyKey;
     const posted = keptAnchor?.success === true && kept !== null
-      ? comments.submit(body, keptAnchor.data, kept.path, keptKey)
+      ? comments.submit(body, keptAnchor.data, kept.path, idempotencyKey)
       : comments.submit(body, anchor, path, idempotencyKey);
     return posted.then((saved) => {
       if (saved) countPostedComment();
@@ -2031,17 +2029,12 @@ function ArtifactReview({
                   const saved = await comments.submit(body, anchor, path, idempotencyKey);
                   if (!saved && newThreadDraftContext !== null && selectedVersionId !== null) {
                     // The in-frame composer discards its text on failure; keep
-                    // it, with its anchor, as this version's new-thread draft
-                    // and show it in the comments panel.
-                    if (anchor === null) {
-                      writeDraft(newThreadDraftContext, body);
-                    } else {
-                      writeAnchoredDraft(newThreadDraftContext, body, {
-                        anchor,
-                        path,
-                        retry: {body, key: idempotencyKey},
-                      });
-                    }
+                    // it, with its anchor and key, as this version's new-thread
+                    // draft and show it in the comments panel.
+                    writeFailedDraft(newThreadDraftContext, body, {
+                      anchor: anchor === null ? null : {anchor, path},
+                      retry: {body, key: idempotencyKey},
+                    });
                     setRestoredDraftGeneration((current) => current + 1);
                     setInspectorTab("comments");
                     if (focusMode) setFocusCommentsOpen(true);

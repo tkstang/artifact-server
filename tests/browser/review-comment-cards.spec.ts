@@ -8,7 +8,11 @@ import {
   startBrowserFixture,
   stopBrowserFixture,
 } from "./browser-fixture.js";
-import {createThreadOverApi, listThreadsOverApi} from "./comment-api.js";
+import {
+  createThreadOverApi,
+  listThreadsOverApi,
+  loseFirstCommittedCommentResponse,
+} from "./comment-api.js";
 
 function presenceRoute(url: URL): boolean {
   return url.pathname === "/api/v1/agents";
@@ -77,6 +81,98 @@ test.describe("Artifact Server Review comment cards", () => {
       expect(sentKeys[1]).toBe(sentKeys[0]);
       const stored = await listThreadsOverApi(fixture, artifactId);
       expect(stored.map((thread) => thread.body)).toEqual(["Only once, please."]);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("CMT-010-B: a lost new comment keeps its key through a tab switch and a reload, and its retry stays one thread", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Remount fixture</h1></html>",
+        idempotencyKey: "review-comment-remount-fixture",
+        name: "Remount fixture",
+      });
+      const artifactId = published.body.artifact.id;
+      const page = fixture.page;
+      page.on("dialog", (dialog) => void dialog.accept());
+      const sent = await loseFirstCommittedCommentResponse(page);
+
+      await localLogin(fixture);
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: published.body.version.id,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      await page.getByLabel("Add a comment").fill("Persist only once.");
+      await page.getByRole("button", {name: "Post comment"}).click();
+      await expect(page.locator(".as-comments__error")).toBeVisible();
+      expect(await listThreadsOverApi(fixture, artifactId)).toHaveLength(1);
+
+      // Switching tabs remounts the composer; a reload rebuilds the page.
+      await page.getByRole("tab", {name: "Details", exact: true}).click();
+      await page.getByRole("tab", {name: /^Comments/u}).click();
+      await expect(page.getByLabel("Add a comment")).toHaveValue("Persist only once.");
+      await page.reload();
+      await page.getByRole("tab", {name: /^Comments/u}).click();
+      await expect(page.getByLabel("Add a comment")).toHaveValue("Persist only once.");
+
+      await page.getByRole("button", {name: "Post comment"}).click();
+      await expect(page.getByLabel("Add a comment")).toHaveValue("");
+      expect((await listThreadsOverApi(fixture, artifactId)).map((thread) => thread.body))
+        .toEqual(["Persist only once."]);
+      expect(sent.keys).toHaveLength(2);
+      expect(sent.keys[1]).toBe(sent.keys[0]);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("CMT-010-B: a lost reply keeps its key when its composer closes and reopens, and its retry stays one reply", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Reply retry fixture</h1></html>",
+        idempotencyKey: "review-comment-reply-retry-fixture",
+        name: "Reply retry fixture",
+      });
+      const artifactId = published.body.artifact.id;
+      const thread = await createThreadOverApi(fixture, {
+        artifactId,
+        body: "Answer me once.",
+        idempotencyKey: "review-comment-reply-retry-thread",
+        versionId: published.body.version.id,
+      });
+      const page = fixture.page;
+      const sent = await loseFirstCommittedCommentResponse(page, /\/comments\/[^/]+\/replies\?/u);
+
+      await localLogin(fixture);
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: published.body.version.id,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      const card = page.locator(".as-comment-card").filter({hasText: "Answer me once."});
+      await card.getByRole("button", {name: "Reply", exact: true}).click();
+      await card.getByLabel("Reply").fill("Answered.");
+      await card.getByRole("button", {name: "Post reply"}).click();
+      await expect(page.locator(".as-comments__error")).toBeVisible();
+
+      // Cancel unmounts the reply composer; reopening restores the draft.
+      await card.getByRole("button", {name: "Cancel"}).click();
+      await card.getByRole("button", {name: "Reply", exact: true}).click();
+      await expect(card.getByLabel("Reply")).toHaveValue("Answered.");
+      await card.getByRole("button", {name: "Post reply"}).click();
+      await expect(card.locator(".as-comment-replies")).toContainText("Answered.");
+      expect(sent.keys).toHaveLength(2);
+      expect(sent.keys[1]).toBe(sent.keys[0]);
+      const stored = await listThreadsOverApi(fixture, artifactId);
+      expect(stored.find(({id}) => id === thread.id)?.replyCount).toBe(1);
     } finally {
       await stopBrowserFixture(fixture);
     }

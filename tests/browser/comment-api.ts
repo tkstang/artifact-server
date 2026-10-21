@@ -121,15 +121,19 @@ export async function listThreadsOverApi(
  * Let the first comment create on `page` reach the server and be stored, then
  * drop its response, as a lost network reply would. Later creates pass. The
  * replay forwards the same-origin headers the server requires of browser
- * mutations, so the first save genuinely commits (asserted as 201).
+ * mutations, so the first save genuinely commits (asserted as 201). `target`
+ * defaults to thread creation; pass the replies route to cover replies.
  */
-export async function loseFirstCommittedCommentResponse(page: Page): Promise<{
+export async function loseFirstCommittedCommentResponse(
+  page: Page,
+  target: RegExp = /\/versions\/[^/]+\/comments\?/u,
+): Promise<{
   readonly bodies: readonly string[];
   readonly keys: readonly string[];
 }> {
   const bodies: string[] = [];
   const keys: string[] = [];
-  await page.route(/\/versions\/[^/]+\/comments\?/u, async (route) => {
+  await page.route(target, async (route) => {
     const request = route.request();
     if (request.method() !== "POST") {
       await route.continue();

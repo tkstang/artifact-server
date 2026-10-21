@@ -34,10 +34,13 @@ export function draftKey(context: DraftContext): string {
 const draftAnchorSchema = z.object({
   anchor: z.json(),
   path: z.string(),
-  // The failed attempt's idempotency key and body: a retry of the unchanged
-  // text reuses the key, so a save whose response was lost is not duplicated.
-  retry: z.object({body: z.string(), key: z.string()}).optional(),
 });
+
+// The last attempt's idempotency key and the exact body it posted: a retry of
+// the unchanged text reuses the key, so a save whose response was lost is not
+// duplicated, even after the composer remounts or the page reloads.
+const draftRetrySchema = z.object({body: z.string(), key: z.string()});
+type DraftRetry = z.infer<typeof draftRetrySchema>;
 
 /**
  * Where a new-thread draft was anchored in the document. A failed
@@ -48,11 +51,13 @@ export type DraftAnchor = z.infer<typeof draftAnchorSchema>;
 
 const memory = new Map<string, string>();
 const anchors = new Map<string, DraftAnchor>();
+const retries = new Map<string, DraftRetry>();
 const mirrorTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 const storedDraftSchema = z.object({
   a: draftAnchorSchema.optional(),
   b: z.string(),
+  r: draftRetrySchema.optional(),
   t: z.number(),
 });
 type StoredDraft = z.infer<typeof storedDraftSchema>;
@@ -73,10 +78,11 @@ function readMirror(key: string): StoredDraft | null {
 }
 
 function writeMirror(key: string, body: string): void {
+  const stored: StoredDraft = {b: body, t: Date.now()};
   const anchor = anchors.get(key);
-  const stored: StoredDraft = anchor === undefined
-    ? {b: body, t: Date.now()}
-    : {a: anchor, b: body, t: Date.now()};
+  if (anchor !== undefined) stored.a = anchor;
+  const retry = retries.get(key);
+  if (retry !== undefined) stored.r = retry;
   try {
     window.localStorage.setItem(key, JSON.stringify(stored));
   } catch {
@@ -106,6 +112,7 @@ export function readDraft(context: DraftContext): string {
   if (mirrored === null) return "";
   memory.set(key, mirrored.b);
   if (mirrored.a !== undefined) anchors.set(key, mirrored.a);
+  if (mirrored.r !== undefined) retries.set(key, mirrored.r);
   return mirrored.b;
 }
 
@@ -115,19 +122,41 @@ export function readDraftAnchor(context: DraftContext): DraftAnchor | null {
   return anchors.get(draftKey(context)) ?? null;
 }
 
-/** Keep a failed in-document comment as this context's draft, with its anchor. */
-export function writeAnchoredDraft(
+/**
+ * The idempotency key for posting `body` from this context: the last
+ * attempt's key while the body is unchanged, otherwise a new key, kept with
+ * the draft before the request leaves so a lost response cannot orphan it.
+ */
+export function draftAttemptKey(context: DraftContext, body: string): string {
+  readDraft(context);
+  const key = draftKey(context);
+  const kept = retries.get(key);
+  if (kept?.body === body) return kept.key;
+  const attempt = {body, key: crypto.randomUUID()};
+  retries.set(key, attempt);
+  const held = memory.get(key);
+  if (held !== undefined) writeMirror(key, held);
+  return attempt.key;
+}
+
+/**
+ * Keep a failed in-document comment as this context's draft, with its anchor
+ * (when it had one) and the attempt's key for an unchanged retry.
+ */
+export function writeFailedDraft(
   context: DraftContext,
   body: string,
-  anchor: {
-    readonly anchor: unknown;
-    readonly path: string;
-    readonly retry?: {readonly body: string; readonly key: string};
+  {anchor, retry}: {
+    readonly anchor: {readonly anchor: unknown; readonly path: string} | null;
+    readonly retry: DraftRetry;
   },
 ): void {
   if (body.trim() === "") return;
+  const key = draftKey(context);
   const parsed = draftAnchorSchema.safeParse(anchor);
-  if (parsed.success) anchors.set(draftKey(context), parsed.data);
+  if (parsed.success) anchors.set(key, parsed.data);
+  else anchors.delete(key);
+  retries.set(key, retry);
   writeDraft(context, body);
 }
 
@@ -151,6 +180,7 @@ export function clearDraft(context: DraftContext): void {
   const key = draftKey(context);
   memory.delete(key);
   anchors.delete(key);
+  retries.delete(key);
   removeMirror(key);
 }
 
@@ -186,6 +216,7 @@ function purgePrincipalDrafts(principalId: string): void {
     if (key.startsWith(prefix)) {
       memory.delete(key);
       anchors.delete(key);
+      retries.delete(key);
       const timer = mirrorTimers.get(key);
       if (timer !== undefined) clearTimeout(timer);
       mirrorTimers.delete(key);
@@ -229,6 +260,8 @@ export function installDraftGuard(): () => void {
 }
 
 export interface CommentDraft {
+  /** The key for posting this body: reused while an unchanged retry. */
+  readonly attemptKey: (body: string) => string;
   readonly initialBody: string;
   readonly onBodyChange: (body: string) => void;
   readonly onDiscard: () => void;
@@ -247,6 +280,10 @@ export function useCommentDraft(context: DraftContext): CommentDraft {
   const onPosted = useCallback(() => {
     clearDraft(contextRef.current);
   }, []);
+  const attemptKey = useCallback(
+    (body: string) => draftAttemptKey(contextRef.current, body),
+    [],
+  );
   useEffect(() => () => {
     // Unmounting mid-debounce must not lose the mirror write.
     const key = draftKey(contextRef.current);
@@ -259,10 +296,11 @@ export function useCommentDraft(context: DraftContext): CommentDraft {
     }
   }, []);
   return useMemo(() => ({
+    attemptKey,
     initialBody,
     onBodyChange,
     onDiscard: onPosted,
     onPosted,
     restored: initialBody.trim() !== "",
-  }), [initialBody, onBodyChange, onPosted]);
+  }), [attemptKey, initialBody, onBodyChange, onPosted]);
 }
