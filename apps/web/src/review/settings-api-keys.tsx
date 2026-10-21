@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 import {
   api,
@@ -23,6 +23,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { formatTimestamp } from "@/lib/presentation";
+import {
+  manualCopyMessage,
+  selectForManualCopy,
+  writeClipboard,
+} from "./share-clipboard.ts";
 
 const capabilities: readonly {
   readonly description: string;
@@ -324,18 +329,31 @@ function SecretDialog({
   readonly onDiscard: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const secretElement = useRef<HTMLElement | null>(null);
   if (issued === null) return null;
+  const copySecret = async (token: string): Promise<void> => {
+    const written = await writeClipboard(token);
+    setCopied(written);
+    setCopyFailed(!written);
+    if (!written) selectForManualCopy(secretElement.current);
+  };
+  const discard = (): void => {
+    setCopied(false);
+    setCopyFailed(false);
+    onDiscard();
+  };
   return (
     <Dialog
+      // The secret is shown once: Escape and outside clicks only close the
+      // dialog after the key was copied; until then "I stored it" is the way out.
+      disablePointerDismissal={!copied}
       onOpenChange={(open) => {
-        if (!open) {
-          setCopied(false);
-          onDiscard();
-        }
+        if (!open && copied) discard();
       }}
       open
     >
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Copy API key now</DialogTitle>
           <DialogDescription>
@@ -343,19 +361,25 @@ function SecretDialog({
             deployment secret manager. Artifact Server cannot show it again.
           </DialogDescription>
         </DialogHeader>
-        <code className="max-h-32 overflow-auto border bg-muted p-3 font-mono text-xs break-all">
+        <code
+          className="max-h-32 overflow-auto border bg-muted p-3 font-mono text-xs break-all"
+          ref={secretElement}
+        >
           {issued.token}
         </code>
+        {copyFailed ? (
+          <p className="text-sm text-destructive" role="alert">
+            {manualCopyMessage("key")}
+          </p>
+        ) : null}
         <DialogFooter>
           <Button
-            onClick={() => {
-              void navigator.clipboard.writeText(issued.token).then(() => setCopied(true));
-            }}
+            onClick={() => void copySecret(issued.token)}
             type="button"
           >
             {copied ? "Copied" : "Copy API key"}
           </Button>
-          <Button onClick={onDiscard} type="button" variant="outline">
+          <Button onClick={discard} type="button" variant="outline">
             I stored it
           </Button>
         </DialogFooter>

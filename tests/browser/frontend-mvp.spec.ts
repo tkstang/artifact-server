@@ -1474,6 +1474,11 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(secret).toBeVisible();
       const secretValue = await secret.textContent();
       expect(secretValue).toMatch(/^as_key_/u);
+      // The one-time secret survives Escape and an outside click until the
+      // administrator copies it or confirms storing it.
+      await fixture.page.keyboard.press("Escape");
+      await fixture.page.mouse.click(4, 4);
+      await expect(secret).toBeVisible();
       await fixture.page.getByRole("button", {name: "I stored it"}).click();
       await expect(fixture.page.getByText(secretValue ?? "missing-secret")).toHaveCount(0);
       expect(await browserStorage(fixture.page)).toEqual({
