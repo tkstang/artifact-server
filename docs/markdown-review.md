@@ -12,7 +12,7 @@ owned by the existing services.
 `ReviewPreview` recognizes `text/markdown` (including MIME parameters), and `.md`
 files declared as `text/plain`. It reads the exact version file, obtains that
 version's existing content-domain preview lease, and derives a complete HTML
-review document with `renderMarkdown`. Markdown uses the same Annotate/Interact controls and focus layout as HTML.
+review document with `renderMarkdown`. Markdown uses the same Commenting/Reading toggle and focus layout as HTML.
 The same HtmlViewer used for HTML renders it in an opaque-origin iframe with `sandbox="allow-scripts"`. The viewer injects its existing trusted annotation bridge. Documents containing
 Mermaid also include a trusted, self-contained diagram runtime; neither script
 is part of the stored original artifact.
@@ -72,7 +72,8 @@ Code uses distinct, readable syntax colors in both themes. Ordinary quotes remai
 simple left-rule quotations; image titles become escaped captions. No remote
 fonts or style-only dependencies were added. Contents is collapsed initially.
 Markdown focus mode reserves space above the viewer for the existing toolbar,
-including its two-row narrow layout. The application palette remains unchanged.
+including its two-row narrow layout. The application shares the same warm
+neutral palette, and documents follow its light or dark theme.
 
 ## Static Mermaid diagrams
 
