@@ -534,8 +534,11 @@ function reviewThemeTokens() {
   const style = getComputedStyle(document.documentElement);
   const value = (name: string): string => style.getPropertyValue(name).trim();
   return {
-    "--accent": value("--as-surface-raised"),
-    "--accent-foreground": value("--as-text"),
+    // The annotation package draws comment markers, highlight underlines and
+    // its accent hovers from --accent; it must be a visible comment colour
+    // with a white numeral on it, in both themes.
+    "--accent": value("--as-annotation-marker"),
+    "--accent-foreground": "#ffffff",
     "--background": value("--as-surface"),
     "--border": value("--as-border"),
     "--card": value("--as-surface"),
