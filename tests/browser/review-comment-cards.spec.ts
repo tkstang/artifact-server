@@ -6,9 +6,9 @@ import {
   startBrowserFixture,
   stopBrowserFixture,
 } from "./browser-fixture.js";
-import {listThreadsOverApi} from "./comment-api.js";
+import {createThreadOverApi, listThreadsOverApi} from "./comment-api.js";
 
-test.describe("Artifact Server Review comment retries", () => {
+test.describe("Artifact Server Review comment cards", () => {
   test("CMT-010-B: a new comment retried after a lost response replays its key and stays one thread", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {
@@ -70,6 +70,53 @@ test.describe("Artifact Server Review comment retries", () => {
       expect(sentKeys[1]).toBe(sentKeys[0]);
       const stored = await listThreadsOverApi(fixture, artifactId);
       expect(stored.map((thread) => thread.body)).toEqual(["Only once, please."]);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("a general comment reads as general, and only a lost anchor reads as unavailable", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Anchor fixture</h1><p>Present text.</p></html>",
+        idempotencyKey: "review-comment-anchor-fixture",
+        name: "Anchor fixture",
+      });
+      const versionId = published.body.version.id;
+      const artifactId = published.body.artifact.id;
+      await createThreadOverApi(fixture, {
+        artifactId,
+        body: "About the whole page.",
+        idempotencyKey: "review-comment-general",
+        versionId,
+      });
+      await createThreadOverApi(fixture, {
+        anchor: {
+          htmlAnchor: {selector: "#gone", tagName: "P", text: "Removed passage."},
+          originalText: "Removed passage.",
+        },
+        artifactId,
+        body: "About a passage this version no longer has.",
+        idempotencyKey: "review-comment-lost-anchor",
+        versionId,
+      });
+
+      await localLogin(fixture);
+      const page = fixture.page;
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: versionId,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      const lost = page.getByRole("article").filter({hasText: "no longer has"});
+      const general = page.getByRole("article").filter({hasText: "About the whole page."});
+      // The frame has reported its unplaceable threads once the lost one says so.
+      await expect(lost.getByText("Location unavailable in this version")).toBeVisible();
+      await expect(general.getByText("Location unavailable in this version")).toHaveCount(0);
+      await expect(general.getByText("General comment", {exact: true})).toBeVisible();
     } finally {
       await stopBrowserFixture(fixture);
     }

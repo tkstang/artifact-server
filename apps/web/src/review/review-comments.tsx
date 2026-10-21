@@ -20,6 +20,7 @@ import {
   type CommentThreadDetails,
   type CommentThreadQuery,
 } from "@/api/client";
+import {documentAnchorOf} from "@/components/comments/comment-anchor";
 import {CommentComposer} from "@/components/comments/comment-composer";
 import {useCommentDraft} from "@/components/comments/comment-drafts";
 import {maximumCommentBodyCharacters} from "@/components/comments/comment-limits";
@@ -757,6 +758,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
         {visibleThreads.map((thread) => {
           const sentDispatch = view === "sent" ? dispatchByThread.get(thread.id) : undefined;
           const replies = visibleReplies.get(thread.id) ?? [];
+          const anchored = documentAnchorOf(thread) !== null;
           return (
             <li key={thread.id}>
               <article
@@ -779,13 +781,12 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                           {formatTimestamp(thread.updatedAt)}
                         </time>
                       </span>
-                      <span>
-                        {thread.path === null ? "Whole version" : (
-                          <>Page <code>{thread.path}</code></>
-                        )}
-                      </span>
+                      {anchored ? null : <span>General comment</span>}
+                      {thread.path === null ? null : (
+                        <span>Page <code>{thread.path}</code></span>
+                      )}
                     </div>
-                    {view !== "sent" && unanchored.has(thread.id) ? (
+                    {view !== "sent" && anchored && unanchored.has(thread.id) ? (
                       <small>Location unavailable in this version</small>
                     ) : null}
                     <div className="as-comment-card__actions">

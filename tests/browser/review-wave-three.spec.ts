@@ -115,7 +115,7 @@ test.describe("Artifact Server Review wave three", () => {
         .toBeVisible();
       await expect(conversation.getByText("1 reply", {exact: true})).toBeVisible();
       await expect(conversation.locator(".as-comment-card__meta")).toContainText("Updated");
-      await expect(conversation.locator(".as-comment-card__meta")).toContainText("Whole version");
+      await expect(conversation.locator(".as-comment-card__meta")).toContainText("General comment");
       await expect(conversation.getByRole("textbox", {exact: true, name: "Reply"}))
         .toHaveCount(0);
       const agentReply = conversation.locator(".as-comment-replies li")
