@@ -143,6 +143,11 @@ function reviewShortcutBlocked(event: KeyboardEvent): boolean {
   ].join(", ")) !== null;
 }
 
+/** A catalog row; the comment total is unknown for an artifact outside the loaded pages. */
+type CatalogItem = Omit<ArtifactPage["artifacts"][number], "commentCount"> & {
+  readonly commentCount: number | null;
+};
+
 interface VersionListItem {
   readonly links: {readonly review: string; readonly version: string};
   readonly version: Version;
@@ -680,9 +685,13 @@ function ArtifactReview({
       ? readDraftAnchor(newThreadDraftContext)
       : null;
     const keptAnchor = kept === null ? null : reviewAnchorSchema.safeParse(kept.anchor);
-    return keptAnchor?.success === true && kept !== null
+    const posted = keptAnchor?.success === true && kept !== null
       ? comments.submit(body, keptAnchor.data, kept.path)
       : comments.submit(body, anchor, path);
+    return posted.then((saved) => {
+      if (saved) countPostedComment();
+      return saved;
+    });
   };
   const inspectorComments = {
     ...comments,
@@ -730,7 +739,7 @@ function ArtifactReview({
   useWebmcp(webmcpRef);
 
   const selectedProject = projects.find((project) => project.id === projectId) ?? null;
-  const catalogItems = useMemo<ArtifactPage["artifacts"]>(() => {
+  const catalogItems = useMemo<readonly CatalogItem[]>(() => {
     if (
       details === null
       || searchQuery !== ""
@@ -740,14 +749,13 @@ function ArtifactReview({
     ) return items;
     return [{
       artifact: details.artifact,
-      commentCount: comments.threads.length,
+      commentCount: null,
       links: details.links,
       versionCount: versions.length,
     }, ...items];
   }, [
     catalogCommentFilter,
     catalogTagFilters.length,
-    comments.threads.length,
     details,
     items,
     searchQuery,
@@ -1080,6 +1088,14 @@ function ArtifactReview({
       : current);
     setItems((current) => current.map((item) => item.artifact.id === artifact.id
       ? {...item, artifact}
+      : item));
+  };
+  // The catalog total counts every comment on every version; one posted from
+  // this page adds to it, and nothing else here changes its scope.
+  const countPostedComment = (): void => {
+    if (selectedArtifactId === null) return;
+    setItems((current) => current.map((item) => item.artifact.id === selectedArtifactId
+      ? {...item, commentCount: item.commentCount + 1}
       : item));
   };
   const makeVersionCurrent = async (
@@ -1582,9 +1598,6 @@ function ArtifactReview({
             />
           ) : null}
           {catalogItems.map(({artifact, commentCount, versionCount}) => {
-            const displayedCommentCount = artifact.id === selectedArtifactId && !comments.loading
-              ? comments.threads.length
-              : commentCount;
             return (
               <button
                 aria-current={artifact.id === selectedArtifactId ? "true" : undefined}
@@ -1604,12 +1617,14 @@ function ArtifactReview({
                     <span aria-hidden="true">·</span>
                     <span>{versionCount} version{versionCount === 1 ? "" : "s"}</span>
                   </span>
-                  <span className="as-artifact-card__counts">
-                    <span>
-                      <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
-                      {displayedCommentCount} comment{displayedCommentCount === 1 ? "" : "s"}
+                  {commentCount === null ? null : (
+                    <span className="as-artifact-card__counts">
+                      <span title={`${commentCount} comment${commentCount === 1 ? "" : "s"} on every version, open, resolved and sent`}>
+                        <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
+                        {commentCount} comment{commentCount === 1 ? "" : "s"}
+                      </span>
                     </span>
-                  </span>
+                  )}
                 </span>
               </button>
             );
@@ -1723,7 +1738,13 @@ function ArtifactReview({
                   >
                     <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
                     Comments
-                    <span className="as-focus-controls__count">{openCommentCount}</span>
+                    <span
+                      className="as-focus-controls__count"
+                      title={`${openCommentCount} open comment${openCommentCount === 1 ? "" : "s"} on this version, not yet sent to an agent`}
+                    >
+                      {openCommentCount}
+                      <span className="as-visually-hidden"> open</span>
+                    </span>
                   </button>
                   <ReviewShareControl
                     details={details}
@@ -1933,6 +1954,7 @@ function ArtifactReview({
                     else setInspectorOpen(true);
                   }
                   if (saved) {
+                    countPostedComment();
                     setInspectorTab("comments");
                     if (!focusMode) {
                       setInspectorOpen(true);
@@ -2036,7 +2058,7 @@ function ArtifactReview({
               ref={inspectorTabListRef}
               role="tablist"
             >
-              <InspectorTabButton active={inspectorTab === "comments"} count={openCommentCount} label="Comments" onClick={() => setInspectorTab("comments")} tab="comments" />
+              <InspectorTabButton active={inspectorTab === "comments"} count={openCommentCount} countLabel={`${openCommentCount} open comment${openCommentCount === 1 ? "" : "s"} on this version, not yet sent to an agent`} label="Comments" onClick={() => setInspectorTab("comments")} tab="comments" />
               <InspectorTabButton active={inspectorTab === "details"} label="Details" onClick={() => setInspectorTab("details")} tab="details" />
               <InspectorTabButton active={inspectorTab === "files"} label="Files" onClick={() => setInspectorTab("files")} tab="files" />
               <InspectorTabButton active={inspectorTab === "versions"} label="Versions" onClick={() => setInspectorTab("versions")} tab="versions" />
@@ -2697,12 +2719,15 @@ function InspectorRow({
 function InspectorTabButton({
   active,
   count,
+  countLabel,
   label,
   onClick,
   tab,
 }: {
   readonly active: boolean;
   readonly count?: number;
+  /** What the count counts, as a tooltip; the badge reads "N open". */
+  readonly countLabel?: string;
   readonly label: string;
   readonly onClick: () => void;
   readonly tab: InspectorTab;
@@ -2719,7 +2744,12 @@ function InspectorTabButton({
       type="button"
     >
       {label}
-      {count === undefined || count === 0 ? null : <span>{count}</span>}
+      {count === undefined || count === 0 ? null : (
+        <span title={countLabel}>
+          {count}
+          {countLabel === undefined ? null : <span className="as-visually-hidden"> open</span>}
+        </span>
+      )}
     </button>
   );
 }

@@ -1,5 +1,6 @@
 import {expect, test} from "@playwright/test";
 
+import {ApiClient, issueApiKey, signInAdministrator} from "../support/agent-dispatch.js";
 import {publishNew} from "../support/publishing.js";
 import {
   localLogin,
@@ -142,6 +143,45 @@ test.describe("Review shell", () => {
         expect(stored[0]?.anchor).toMatchObject({originalText: "Shell preview content"});
       }).toPass();
       expect(failures).toBe(1);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("DSP-004-B: the catalog comment total keeps its scope while sent comments leave the open count", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await Promise.all([1, 2].map((index) => createThreadOverApi(fixture, {
+        artifactId: published.body.artifact.id,
+        body: `Comment ${index}`,
+        idempotencyKey: `review-shell-count-${index}`,
+        versionId: published.body.version.id,
+      })));
+      const cookies = await signInAdministrator(fixture.server, fixture.installation);
+      const agent = new ApiClient(
+        fixture.server,
+        await issueApiKey(fixture.server, cookies, ["agent:connect"], "counter key"),
+      );
+      await agent.registerAgent({
+        agentSessionId: "session-counter",
+        connectionKey: "review-shell-counter",
+        displayName: "counter",
+        workingDirectory: "/work/counter",
+      });
+      await localLogin(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const card = fixture.page.locator(".as-artifact-card[data-selected='true']");
+      await expect(card).toContainText("2 comments");
+      await fixture.page.getByRole("tab", {name: /^Comments/u}).click();
+      await expect(fixture.page.getByRole("tab", {name: /^Comments/u})).toHaveAccessibleName("Comments 2 open");
+
+      await fixture.page.getByRole("button", {name: "Send all open (2) to counter"}).click();
+      await expect(fixture.page.getByText("Sent 2 threads to counter")).toBeVisible();
+      // Every comment still exists; sending moves it to the agent, not out of the total.
+      await expect(card).toContainText("2 comments");
+      await expect(fixture.page.getByRole("tab", {name: /^Comments/u})).toHaveAccessibleName("Comments");
     } finally {
       await stopBrowserFixture(fixture);
     }
