@@ -714,6 +714,8 @@ function ArtifactReview({
   const openCommentCount = comments.threads.filter(
     (thread) => thread.state === "open",
   ).length;
+  // A failed first read leaves no threads: show no count rather than a false 0.
+  const commentCountKnown = comments.loadError === null || comments.threads.length > 0;
 
   // Browser agent tools (WebMCP): the ref hands the adapter live view state
   // each render; registration itself lives entirely in webmcp.tsx.
@@ -1791,13 +1793,13 @@ function ArtifactReview({
                   >
                     <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
                     Comments
-                    <span
+                    {commentCountKnown ? <span
                       className="as-focus-controls__count"
                       title={`${openCommentCount} open comment${openCommentCount === 1 ? "" : "s"} on this version, not yet sent to an agent`}
                     >
                       {openCommentCount}
                       <span className="as-visually-hidden"> open</span>
-                    </span>
+                    </span> : null}
                   </button>
                   <ReviewShareControl
                     details={details}
@@ -1857,7 +1859,7 @@ function ArtifactReview({
                   <div>
                     <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
                     <h2 id="review-focus-comments-title">Comments</h2>
-                    <span>{openCommentCount}</span>
+                    {commentCountKnown ? <span>{openCommentCount}</span> : null}
                   </div>
                   <IconButton
                     keyShortcuts="] Escape"
@@ -2179,7 +2181,9 @@ function ArtifactReview({
               ref={inspectorTabListRef}
               role="tablist"
             >
-              <InspectorTabButton active={inspectorTab === "comments"} count={openCommentCount} countLabel={`${openCommentCount} open comment${openCommentCount === 1 ? "" : "s"} on this version, not yet sent to an agent`} label="Comments" onClick={() => setInspectorTab("comments")} tab="comments" />
+              {commentCountKnown
+                ? <InspectorTabButton active={inspectorTab === "comments"} count={openCommentCount} countLabel={`${openCommentCount} open comment${openCommentCount === 1 ? "" : "s"} on this version, not yet sent to an agent`} label="Comments" onClick={() => setInspectorTab("comments")} tab="comments" />
+                : <InspectorTabButton active={inspectorTab === "comments"} label="Comments" onClick={() => setInspectorTab("comments")} tab="comments" />}
               <InspectorTabButton active={inspectorTab === "details"} label="Details" onClick={() => setInspectorTab("details")} tab="details" />
               <InspectorTabButton active={inspectorTab === "files"} label="Files" onClick={() => setInspectorTab("files")} tab="files" />
               <InspectorTabButton active={inspectorTab === "versions"} label="Versions" onClick={() => setInspectorTab("versions")} tab="versions" />

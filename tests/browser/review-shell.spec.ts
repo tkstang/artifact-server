@@ -189,7 +189,7 @@ test.describe("Review shell", () => {
       await expect(fixture.page.getByRole("tab", {name: /^Comments/u})).toHaveAccessibleName("Comments 2 open");
 
       await fixture.page.getByRole("button", {name: "Send all open (2) to counter"}).click();
-      await expect(fixture.page.getByText("Sent 2 threads to counter")).toBeVisible();
+      await expect(fixture.page.getByText("Sent 2 comments to counter")).toBeVisible();
       // Every comment still exists; sending moves it to the agent, not out of the total.
       await expect(card).toContainText("2 comments");
       await expect(fixture.page.getByRole("tab", {name: /^Comments/u})).toHaveAccessibleName("Comments");

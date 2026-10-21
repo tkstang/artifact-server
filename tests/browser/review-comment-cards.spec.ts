@@ -171,6 +171,8 @@ test.describe("Artifact Server Review comment cards", () => {
       await expect(failure).toContainText("Comments could not be loaded.");
       await expect(page.getByText(/No open comments|are resolved/u)).toHaveCount(0);
       await expect(page.getByRole("button", {name: /^Send all open/u})).toHaveCount(0);
+      // The tab carries no count it does not know, rather than a false 0.
+      await expect(page.getByRole("tab", {name: /Comments/u})).toHaveText("Comments");
 
       available = true;
       await failure.getByRole("button", {name: "Try again"}).click();
