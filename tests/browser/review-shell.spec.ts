@@ -8,7 +8,11 @@ import {
   stopBrowserFixture,
   type BrowserFixture,
 } from "./browser-fixture.js";
-import {createThreadOverApi, listThreadsOverApi} from "./comment-api.js";
+import {
+  createThreadOverApi,
+  listThreadsOverApi,
+  loseFirstCommittedCommentResponse,
+} from "./comment-api.js";
 
 const reviewDocument = "<!doctype html><html lang=\"en\"><title>Shell fixture</title><main><h1 id=\"shell-target\">Shell preview content</h1><p>Body text for the shell fixture.</p></main></html>";
 
@@ -118,22 +122,7 @@ test.describe("Review shell", () => {
       await fixture.page.setViewportSize({height: 900, width: 1440});
       // The first save reaches the server and is stored, but its response is
       // lost: the retry must reuse the key so the comment is not duplicated.
-      let failures = 0;
-      const keys: string[] = [];
-      await fixture.page.route(/\/versions\/[^/]+\/comments\?/u, async (route) => {
-        if (route.request().method() !== "POST") {
-          await route.continue();
-          return;
-        }
-        keys.push(route.request().headers()["idempotency-key"] ?? "");
-        if (failures > 0) {
-          await route.continue();
-          return;
-        }
-        failures += 1;
-        await route.fetch();
-        await route.abort("connectionreset");
-      });
+      const sent = await loseFirstCommittedCommentResponse(fixture.page);
       await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
       const reviewFrame = fixture.page.frameLocator(".as-artifact-frame");
       const preview = reviewFrame.frameLocator("iframe");
@@ -144,16 +133,17 @@ test.describe("Review shell", () => {
 
       const composer = fixture.page.getByLabel("Add a comment");
       await expect(composer).toHaveValue("Name the owner of this heading.");
+      expect(await listThreadsOverApi(fixture, published.body.artifact.id)).toHaveLength(1);
       await fixture.page.getByRole("button", {name: "Post comment"}).click();
+      await expect(composer).toHaveValue("");
       await expect(async () => {
         const stored = await listThreadsOverApi(fixture, published.body.artifact.id);
         expect(stored).toHaveLength(1);
         expect(stored[0]?.path).toBe("index.html");
         expect(stored[0]?.anchor).toMatchObject({originalText: "Shell preview content"});
       }).toPass();
-      expect(failures).toBe(1);
-      expect(keys).toHaveLength(2);
-      expect(keys[1]).toBe(keys[0]);
+      expect(sent.keys).toHaveLength(2);
+      expect(sent.keys[1]).toBe(sent.keys[0]);
     } finally {
       await stopBrowserFixture(fixture);
     }
