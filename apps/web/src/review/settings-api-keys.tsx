@@ -40,7 +40,7 @@ const capabilities: readonly {
   { description: "Restore, change tags and access, or tombstone.", label: "Manage artifacts", value: "artifact:manage:any" },
   { description: "Open the content of private artifacts.", label: "Open private content", value: "content-session:issue" },
   { description: "Create, rename, archive, and unarchive projects.", label: "Manage projects", value: "project:manage" },
-  { description: "Register a coding agent and claim dispatched annotations.", label: "Connect agents", value: "agent:connect" },
+  { description: "Register a coding agent and claim the comments sent to it.", label: "Connect agents", value: "agent:connect" },
   { description: "Read, reply to, and resolve review comments.", label: "Manage comments", value: "comment:write" },
 ];
 

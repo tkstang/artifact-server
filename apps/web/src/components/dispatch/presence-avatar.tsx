@@ -97,7 +97,7 @@ export function presenceSentence(
         formatRelativeTime(agent.lastActivityAt ?? agent.lastSeenAt, now)
       }.`;
     case "replying":
-      return "Replying — writing back to the annotations it was sent.";
+      return "Replying — writing back to the comments it was sent.";
     case "disconnected":
       return `Not connected — last seen ${
         formatRelativeTime(agent.lastSeenAt, now)
