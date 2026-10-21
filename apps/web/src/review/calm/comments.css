@@ -217,3 +217,28 @@
 .as-comments__read-error .as-button {
   justify-self: start;
 }
+
+.as-comments__empty {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.as-comments__empty p {
+  margin: 0;
+}
+
+.as-comments__to-sent {
+  border-color: transparent;
+  color: var(--as-iris);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-left: -0.45rem;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.as-comments__to-sent:hover {
+  background: var(--as-hover);
+  border-color: transparent;
+}

@@ -1,6 +1,8 @@
 import {expect, test} from "@playwright/test";
 
+import {ApiClient} from "../support/agent-dispatch.js";
 import {publishNew} from "../support/publishing.js";
+import {connectAgentOverApi} from "./agent-api.js";
 import {
   localLogin,
   startBrowserFixture,
@@ -170,6 +172,55 @@ test.describe("Artifact Server Review comment cards", () => {
       await expect(page.getByRole("article").filter({hasText: "A comment that exists."}))
         .toBeVisible();
       await expect(failure).toHaveCount(0);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("comments with an agent are counted as with it, never as resolved", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Agent work fixture</h1></html>",
+        idempotencyKey: "review-comment-agent-work",
+        name: "Agent work fixture",
+      });
+      const artifactId = published.body.artifact.id;
+      const versionId = published.body.version.id;
+      const done = await createThreadOverApi(fixture, {
+        artifactId,
+        body: "Already settled.",
+        idempotencyKey: "review-comment-agent-work-done",
+        versionId,
+      });
+      await createThreadOverApi(fixture, {
+        artifactId,
+        body: "Please tighten the intro.",
+        idempotencyKey: "review-comment-agent-work-open",
+        versionId,
+      });
+      const owner = new ApiClient(fixture.server, fixture.installation.apiToken);
+      expect((await owner.setThreadState(published.body, done.id, "resolved")).status)
+        .toBe(200);
+      await connectAgentOverApi(fixture, "builder");
+
+      await localLogin(fixture);
+      const page = fixture.page;
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: versionId,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      await page.getByRole("button", {name: "Send all open (1) to builder"}).click();
+      await expect(page.getByText("1 comment is with builder.", {exact: true})).toBeVisible();
+      await expect(page.getByText("All comments on this version are resolved.")).toHaveCount(0);
+      await page.getByRole("button", {name: "Show sent comments"}).click();
+      await expect(page.getByRole("button", {name: "Sent (1)"}))
+        .toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByRole("article").filter({hasText: "Please tighten the intro."}))
+        .toBeVisible();
     } finally {
       await stopBrowserFixture(fixture);
     }

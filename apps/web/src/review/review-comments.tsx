@@ -31,6 +31,7 @@ import {
   useCommentPoll,
 } from "@/components/comments/comment-poll";
 import {formatTimestamp} from "@/lib/presentation";
+import {agentWorkOf, agentWorkSentence} from "@/components/dispatch/agent-work";
 import {bundleOfThreads} from "@/components/dispatch/dispatch-bundle";
 import {loadDispatchIndex} from "@/components/dispatch/dispatch-index";
 import {
@@ -668,7 +669,34 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
   // empty state may stand in for it. A failed later read keeps what loaded.
   const readFailed = session.loadError !== null && session.threads.length === 0;
   const sentReadFailed = sentError !== null && sentThreads.length === 0;
+  const agentWork = agentWorkOf(sentThreads, dispatchByThread);
+  const openSentCount = sentThreads.filter((thread) => thread.state === "open").length;
   const now = Date.now();
+
+  /** Why Open is empty, without claiming "resolved" for work an agent holds. */
+  const openEmptyMessage = (): string => {
+    const withAgents = agentWorkSentence(agentWork);
+    const stalled = agentWork.stalled === 1
+      ? "1 sent comment was not delivered."
+      : `${agentWork.stalled} sent comments were not delivered.`;
+    if (withAgents !== null) {
+      return agentWork.stalled === 0 ? `${withAgents}.` : `${withAgents}. ${stalled}`;
+    }
+    if (agentWork.stalled > 0) return stalled;
+    return resolvedThreads.length > 0
+      || sentThreads.some((thread) => thread.state === "resolved")
+      ? "All comments on this version are resolved."
+      : "No open comments on this version.";
+  };
+  const showSent = (
+    <button
+      className="as-button as-comments__to-sent"
+      onClick={() => setView("sent")}
+      type="button"
+    >
+      Show sent comments
+    </button>
+  );
 
   const cancelDispatch = async (dispatch: AgentDispatch): Promise<void> => {
     setSentError(null);
@@ -780,15 +808,18 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
       ) : null}
       {!loadingVisible && !readFailed && !(view === "sent" && sentReadFailed)
           && visibleThreads.length === 0 ? (
-        <p className="as-inspector-empty">
-          {view === "all"
-            ? "No comments on this version yet."
-            : view === "sent"
-              ? "No sent comments on this version."
-              : view === "open" && resolvedThreads.length > 0
-                ? "All comments on this version are resolved."
-                : `No ${view} comments on this version.`}
-        </p>
+        <div className="as-inspector-empty as-comments__empty">
+          <p>
+            {view === "all"
+              ? "No comments on this version yet."
+              : view === "sent"
+                ? "No sent comments on this version."
+                : view === "open"
+                  ? openEmptyMessage()
+                  : `No ${view} comments on this version.`}
+          </p>
+          {view === "open" && openSentCount > 0 ? showSent : null}
+        </div>
       ) : null}
       <ol className="as-comment-list">
         {visibleThreads.map((thread) => {
