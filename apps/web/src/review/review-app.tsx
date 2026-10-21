@@ -62,6 +62,7 @@ import {
   sourceFreshnessLabel,
 } from "@/lib/presentation";
 import {useHorizontalOverflow} from "@/lib/use-horizontal-overflow";
+import {useMediaQuery} from "@/lib/use-media-query";
 import artifactServerAnimationUrl from "./assets/artifact-server.svg";
 import {ArtifactMark} from "./artifact-mark.tsx";
 import {
@@ -640,6 +641,20 @@ function ArtifactReview({
       ...new Set([...current, ...details.artifact.tags]),
     ].toSorted());
   }, [details]);
+  const inspectorOverlays = useMediaQuery(inspectorOverlayQuery);
+  const catalogOverlays = useMediaQuery(catalogOverlayQuery);
+  // "Show in page" selects a thread to reveal its anchor; a panel that
+  // overlays the artifact would cover it, so it steps aside first.
+  const revealThreadInDocument = (threadId: string | null): void => {
+    comments.selectThread(threadId);
+    if (threadId === null) return;
+    if (focusMode) {
+      if (catalogOverlays) setFocusCommentsOpen(false);
+    } else if (inspectorOverlays) {
+      setInspectorOpen(false);
+    }
+  };
+  const inspectorComments = {...comments, selectThread: revealThreadInDocument};
   const openCommentCount = comments.threads.filter(
     (thread) => thread.state === "open",
   ).length;
@@ -1751,7 +1766,7 @@ function ArtifactReview({
                     canDeleteAny={canDeleteAnyComment}
                     principalId={session.principal.id}
                     ref={commentsInspectorRef}
-                    session={comments}
+                    session={inspectorComments}
                     versionId={selectedVersionId}
                   />
                 </div>
@@ -2025,7 +2040,7 @@ function ArtifactReview({
                 canDeleteAny={canDeleteAnyComment}
                 principalId={session.principal.id}
                 ref={commentsInspectorRef}
-                session={comments}
+                session={inspectorComments}
                 versionId={selectedVersionId}
               />
             ) : inspectorTab === "files" ? (
