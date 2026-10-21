@@ -4,6 +4,7 @@ import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -2742,6 +2743,9 @@ function ActivityInspector({
   );
 }
 
+/** At most this many lines of each side of a change region are drawn. */
+const comparedLineLimit = 40;
+
 function ComparisonInspector({
   comparison,
   error,
@@ -2750,34 +2754,132 @@ function ComparisonInspector({
   readonly error: Error | null;
 }) {
   if (error !== null) return <InlineState description={error.message} title="Comparison unavailable" />;
-  if (comparison === null) return <InlineState description="Choose two versions from Versions." title="No comparison" />;
-  const changedEntries = [
+  if (comparison === null) return <InlineState description="Choose two versions in Versions." title="No comparison" />;
+  const otherEntries = [
     ...comparison.added.map((entry) => ({kind: "Added", path: entry.path})),
-    ...comparison.changed.map((entry) => ({kind: "Changed", path: entry.after.path})),
     ...comparison.removed.map((entry) => ({kind: "Removed", path: entry.path})),
     ...comparison.renamed.map((entry) => ({kind: "Renamed", path: `${entry.from.path} → ${entry.to.path}`})),
   ];
+  const summary = [
+    [comparison.changed.length, "changed"],
+    [comparison.added.length, "added"],
+    [comparison.removed.length, "removed"],
+    [comparison.renamed.length, "renamed"],
+    [comparison.unchangedCount, "unchanged"],
+  ] as const;
   return (
     <div className="as-inspector-stack">
       <InspectorSection count={2} title={`Version ${comparison.from.number} → ${comparison.to.number}`}>
         <div className="as-comparison-summary">
-          <span>{comparison.added.length} added</span>
-          <span>{comparison.changed.length} changed</span>
-          <span>{comparison.removed.length} removed</span>
-          <span>{comparison.renamed.length} renamed</span>
-          <span>{comparison.unchangedCount} unchanged</span>
+          {summary.filter(([count]) => count > 0).map(([count, label]) => (
+            <span key={label}>{count} {count === 1 ? "file" : "files"} {label}</span>
+          ))}
         </div>
       </InspectorSection>
-      <InspectorSection count={changedEntries.length} title="Changed files">
-        {changedEntries.length === 0 ? <p className="as-inspector-empty">These versions have the same files.</p> : (
+      <InspectorSection count={comparison.changed.length} title="Changed files">
+        {comparison.changed.length === 0 && otherEntries.length === 0 ? (
+          <p className="as-inspector-empty">These versions have the same files.</p>
+        ) : null}
+        {comparison.changed.map((file) => (
+          <ComparedFileChange
+            file={file}
+            fromNumber={comparison.from.number}
+            key={file.after.path}
+            toNumber={comparison.to.number}
+          />
+        ))}
+        {otherEntries.length === 0 ? null : (
           <ol className="as-comparison-list">
-            {changedEntries.map((entry) => (
+            {otherEntries.map((entry) => (
               <li key={`${entry.kind}-${entry.path}`}><span>{entry.kind}</span><code>{entry.path}</code></li>
             ))}
           </ol>
         )}
       </InspectorSection>
     </div>
+  );
+}
+
+/** One changed file: its changed lines before and after, or why they are not shown. */
+function ComparedFileChange({
+  file,
+  fromNumber,
+  toNumber,
+}: {
+  readonly file: ArtifactComparison["changed"][number];
+  readonly fromNumber: number;
+  readonly toNumber: number;
+}) {
+  const {detail} = file;
+  return (
+    <article className="as-compare-file">
+      <header>
+        <code>{file.after.path}</code>
+      </header>
+      {detail.kind === "binary" ? (
+        <p className="as-inspector-empty">
+          {detail.reason === "text_limit_exceeded"
+            ? "Too large to compare line by line."
+            : "Not a text file, so its lines cannot be compared."}
+        </p>
+      ) : detail.change === null ? (
+        <p className="as-inspector-empty">The lines are the same; only the file's details changed.</p>
+      ) : (
+        <>
+          <ComparedLines
+            label={`Version ${fromNumber}`}
+            lines={detail.change.before}
+            side="before"
+            startLine={detail.change.beforeStartLine}
+          />
+          <ComparedLines
+            label={`Version ${toNumber}`}
+            lines={detail.change.after}
+            side="after"
+            startLine={detail.change.afterStartLine}
+          />
+        </>
+      )}
+    </article>
+  );
+}
+
+function ComparedLines({
+  label,
+  lines,
+  side,
+  startLine,
+}: {
+  readonly label: string;
+  readonly lines: readonly string[];
+  readonly side: "after" | "before";
+  readonly startLine: number;
+}) {
+  const headingId = useId();
+  const shown = lines.slice(0, comparedLineLimit);
+  const lineRange = lines.length === 0
+    ? `nothing at line ${startLine}`
+    : lines.length === 1
+      ? `line ${startLine}`
+      : `lines ${startLine}–${startLine + lines.length - 1}`;
+  return (
+    <section aria-labelledby={headingId} className="as-compare-lines" data-side={side}>
+      <h3 id={headingId}>
+        {side === "before" ? "Before" : "After"} · {label}, {lineRange}
+      </h3>
+      {shown.length === 0 ? null : (
+        <ol start={startLine}>
+          {shown.map((line, index) => (
+            <li key={`${startLine + index}`}><code>{line === "" ? "\u00a0" : line}</code></li>
+          ))}
+        </ol>
+      )}
+      {lines.length > shown.length ? (
+        <p className="as-inspector-empty">
+          {lines.length - shown.length} more line{lines.length - shown.length === 1 ? "" : "s"} not shown.
+        </p>
+      ) : null}
+    </section>
   );
 }
 

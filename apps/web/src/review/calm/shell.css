@@ -416,3 +416,68 @@ body {
 .as-catalog-empty__command .as-button {
   flex: 0 0 auto;
 }
+
+/* Compare: each changed text file shows its changed lines before and after,
+   labelled by version, not only by colour. */
+.as-compare-file {
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+  display: grid;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.as-compare-file > header {
+  background: var(--as-surface-raised);
+  border-bottom: 1px solid var(--as-border);
+  padding: 0.4rem 0.6rem;
+}
+
+.as-compare-file > header code {
+  font-family: var(--as-mono-font);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.as-compare-file > .as-inspector-empty {
+  margin: 0;
+  padding: 0.6rem;
+}
+
+.as-compare-lines h3 {
+  color: var(--as-subtle);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0;
+  padding: 0.45rem 0.6rem 0.25rem;
+}
+
+.as-compare-lines ol {
+  font-family: var(--as-mono-font);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0.15rem 0.6rem 0.5rem 2.6rem;
+}
+
+.as-compare-lines li::marker {
+  color: var(--as-muted);
+}
+
+.as-compare-lines code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.as-compare-lines[data-side="before"] ol {
+  background: color-mix(in oklab, var(--as-love) 7%, var(--as-surface));
+}
+
+.as-compare-lines[data-side="after"] ol {
+  background: color-mix(in oklab, var(--as-pine) 9%, var(--as-surface));
+}
+
+.as-compare-lines > .as-inspector-empty {
+  margin: 0;
+  padding: 0 0.6rem 0.5rem;
+}

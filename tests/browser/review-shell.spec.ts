@@ -295,4 +295,38 @@ test.describe("Review shell", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("PRD-003-B: Compare shows the changed lines of a text file before and after", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const first = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "alpha\nbeta\ngamma\n",
+        idempotencyKey: "review-shell-compare-v1",
+        mediaType: "text/plain; charset=utf-8",
+        name: "Compare fixture",
+        path: "notes.txt",
+      });
+      await publishVersion(fixture.server, fixture.installation, {
+        artifactId: first.body.artifact.id,
+        content: "alpha\nBETA, revised\ngamma\n",
+        expectedCurrentVersionId: first.body.version.id,
+        idempotencyKey: "review-shell-compare-v2",
+        mediaType: "text/plain; charset=utf-8",
+        path: "notes.txt",
+      });
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await localLogin(fixture);
+      await fixture.page.goto(reviewUrl(fixture, first.body.artifact.id));
+      await fixture.page.getByRole("tab", {name: "Versions"}).click();
+      await fixture.page.getByRole("button", {name: "Compare", exact: true}).click();
+      const panel = fixture.page.getByRole("tabpanel", {name: "Compare"});
+      const before = panel.getByRole("region", {name: /^Before · Version 1, line 2$/u});
+      const after = panel.getByRole("region", {name: /^After · Version 2, line 2$/u});
+      await expect(before.getByRole("listitem")).toHaveText(["beta"]);
+      await expect(after.getByRole("listitem")).toHaveText(["BETA, revised"]);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });
