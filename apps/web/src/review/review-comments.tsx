@@ -35,7 +35,7 @@ import {
   useCommentListOwnership,
   useCommentPoll,
 } from "@/components/comments/comment-poll";
-import {formatTimestamp} from "@/lib/presentation";
+import {failureMessage, formatTimestamp} from "@/lib/presentation";
 import {
   agentHoldsTheComment,
   agentWorkOf,
@@ -807,8 +807,11 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
         </div>
       </div>
       {readFailed ? (
-        <div className="as-comments__read-error" role="alert">
-          <p>Comments could not be loaded. {session.loadError?.message}</p>
+        <div className="as-comments__read-error as-notice" role="alert">
+          <p>
+            Comments could not be loaded.
+            {session.loadError === null ? null : ` ${failureMessage(session.loadError)}`}
+          </p>
           <button
             className="as-button"
             disabled={session.loading}
@@ -843,15 +846,15 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
         </p>
       )}
       {session.error === null ? null : (
-        <p className="as-comments__error" role="alert">{session.error.message}</p>
+        <p className="as-comments__error as-notice" role="alert">{failureMessage(session.error)}</p>
       )}
       {readFailed ? null : session.loadError === null ? null : (
-        <p className="as-comments__error" role="alert">
+        <p className="as-comments__error as-notice" role="alert">
           Comments could not be refreshed; showing the last loaded ones.
         </p>
       )}
       {sentError === null || readFailed ? null : (
-        <p className="as-comments__error" role="alert">{sentError.message}</p>
+        <p className="as-comments__error as-notice" role="alert">{failureMessage(sentError)}</p>
       )}
       {readFailed || (openThreads.length === 0 && agentWork.total === 0) ? null : (
         // Each count names its scope: open means not yet sent, so it is

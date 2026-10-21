@@ -6,7 +6,7 @@ import {
   api,
   type ArtifactVersion,
 } from "@/api/client";
-import {formatBytes} from "@/lib/presentation";
+import {failureMessage, formatBytes} from "@/lib/presentation";
 import {
   frameMessageSchema,
   reviewProtocolVersion,
@@ -417,7 +417,7 @@ function HtmlPreview({
     return (
       <TerminalPreviewState
         actions={actions}
-        description={error.message}
+        description={failureMessage(error)}
         mediaType={entry.mediaType}
         onRetry={retry}
         path={entry.path}
@@ -619,7 +619,7 @@ function TerminalPreviewState({
     <div className="as-preview-state as-preview-state--terminal" data-tone="error" role="alert">
       <span aria-hidden="true" className="as-preview-state__mark" />
       <h3>{title}</h3>
-      <p>{description}</p>
+      <p className="as-notice">{description}</p>
       <dl className="as-preview-state__details">
         <div><dt>Path</dt><dd><code>{path}</code></dd></div>
         <div><dt>Type</dt><dd><code>{mediaType}</code></dd></div>

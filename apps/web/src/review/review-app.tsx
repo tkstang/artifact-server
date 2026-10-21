@@ -63,6 +63,7 @@ import {
 } from "@/api/client";
 import {
   actionLabel,
+  failureMessage,
   formatBytes,
   formatRelativeTime,
   formatTimestamp,
@@ -502,7 +503,7 @@ export function ReviewApp() {
     return (
       <ReviewGate
         action={<button className="as-button" onClick={() => void bootstrap()} type="button">Try again</button>}
-        description={error.message}
+        description={failureMessage(error)}
         title="Artifact Server unavailable"
       />
     );
@@ -1640,7 +1641,7 @@ function ArtifactReview({
 
         <div className="as-catalog__list">
           {listError === null ? null : (
-            <InlineState description={listError.message} title="Catalog unavailable" tone="error" />
+            <InlineState description={failureMessage(listError)} title="Catalog unavailable" tone="error" />
           )}
           {listLoading && items.length === 0 ? (
             <InlineState description="Reading this project." title="Loading artifacts" />
@@ -1968,7 +1969,7 @@ function ArtifactReview({
 
           <div className="as-preview-panel__body" data-preview-kind={previewKind}>
             {detailError === null || reviewTargetUnavailable ? null : (
-              <div className="as-preview-error" role="alert">{detailError.message}</div>
+              <div className="as-preview-error" role="alert">{failureMessage(detailError)}</div>
             )}
             {selectedArtifactId === null ? (
               projectEmpty ? null : <PreviewWelcome />
@@ -2597,7 +2598,7 @@ function TagsInspector({
           />
           <p>Separate tags with commas. Saving replaces the complete set.</p>
           {error === null ? null : (
-            <p className="as-tag-editor__error" role="alert">{error.message}</p>
+            <p className="as-tag-editor__error" role="alert">{failureMessage(error)}</p>
           )}
           <div className="as-tag-editor__actions">
             <button className="as-button as-button--primary" disabled={pending} type="submit">
@@ -2763,7 +2764,7 @@ function ActivityInspector({
   return (
     <div className="as-inspector-stack">
       <InspectorSection count={actions.length} title="Activity">
-        {error === null ? null : <p className="as-inspector-error" role="alert">{error.message}</p>}
+        {error === null ? null : <p className="as-inspector-error" role="alert">{failureMessage(error)}</p>}
         {actions.length === 0 && loading ? <p className="as-inspector-empty">Loading activity…</p> : null}
         {actions.length === 0 && !loading ? <p className="as-inspector-empty">No activity recorded.</p> : null}
         <ol className="as-activity-list">
@@ -2798,7 +2799,7 @@ function ComparisonInspector({
   readonly comparison: ArtifactComparison | null;
   readonly error: Error | null;
 }) {
-  if (error !== null) return <InlineState description={error.message} title="Comparison unavailable" />;
+  if (error !== null) return <InlineState description={failureMessage(error)} title="Comparison unavailable" />;
   if (comparison === null) return <InlineState description="Choose two versions in Versions." title="No comparison" />;
   const otherEntries = [
     ...comparison.added.map((entry) => ({kind: "Added", path: entry.path})),

@@ -214,3 +214,17 @@ select:focus-visible {
   border-radius: var(--as-radius);
   font-size: 0.8125rem;
 }
+
+/* Notices: one inline treatment for a failure on any surface (a failed
+   preview, a failed comments read, a failed save): ink text on the danger
+   wash, so it reads as a problem without red text. */
+.as-notice {
+  background: var(--as-love-soft);
+  border: 0;
+  border-radius: var(--as-radius);
+  color: var(--as-text);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+}

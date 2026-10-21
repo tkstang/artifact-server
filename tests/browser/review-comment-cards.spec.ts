@@ -68,7 +68,9 @@ test.describe("Artifact Server Review comment cards", () => {
       await page.getByLabel("Add a comment").fill("Only once, please.");
       const post = page.getByRole("button", {name: "Post comment"});
       await post.click();
-      await expect(page.locator(".as-comments__error")).toBeVisible();
+      // The browser's own wording ("Failed to fetch") never reaches the reader.
+      await expect(page.locator(".as-comments__error"))
+        .toHaveText("Can't reach Artifact Server. Check your connection and try again.");
       expect((await listThreadsOverApi(fixture, artifactId)).length).toBe(1);
 
       // Retry from the keyboard: Cmd/Ctrl+Enter submits like the button.

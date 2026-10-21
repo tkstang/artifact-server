@@ -42,10 +42,39 @@ export function formatBytes(value: number): string {
   return `${(value / 1_000_000_000).toFixed(1)} GB`;
 }
 
+const unreachableMessage = "Can't reach Artifact Server. Check your connection and try again.";
+const timedOutMessage = "Artifact Server took too long to answer. Try again.";
+const incompleteMessage = "Artifact Server could not complete the request.";
+
+/**
+ * Plain words for failures the browser raises itself. A rejected fetch is a
+ * TypeError whose text differs by browser ("Failed to fetch", "Load failed",
+ * "NetworkError when attempting to fetch resource."); a DOMException carries
+ * engine wording. Neither is shown to people. Returns null for any other
+ * error, whose message the product wrote.
+ */
+function browserFailureMessage(error: Error): string | null {
+  if (error instanceof DOMException) {
+    return error.name === "TimeoutError" ? timedOutMessage : incompleteMessage;
+  }
+  if (error instanceof TypeError) {
+    return /fetch|network|load failed/iu.test(error.message) ? unreachableMessage : incompleteMessage;
+  }
+  return null;
+}
+
+/**
+ * The message to show for a failure: the product's own wording (API and
+ * application errors) as written, browser-raised failures in plain words.
+ */
+export function failureMessage(error: Error): string {
+  return browserFailureMessage(error) ?? error.message;
+}
+
 /** Returns a useful operator-facing message for expected API failures. */
 export function errorMessage(error: Error): string {
   if (!(error instanceof ApiError)) {
-    return "Artifact Server could not complete the request.";
+    return browserFailureMessage(error) ?? incompleteMessage;
   }
   if (error.status === 401) {
     return "Your session expired. Sign in again to continue.";

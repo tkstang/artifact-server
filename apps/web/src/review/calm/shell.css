@@ -433,6 +433,15 @@ body {
   }
 }
 
+/* A failed preview states its reason in the shared notice. */
+.as-preview-state .as-notice {
+  color: var(--as-text);
+  font-size: 0.8125rem;
+  margin: 0.75rem 0 0;
+  text-align: left;
+  width: 100%;
+}
+
 /* Empty and error states: one plain message on the canvas, with a next step. */
 .as-preview-welcome {
   background: transparent;

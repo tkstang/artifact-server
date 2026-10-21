@@ -20,6 +20,7 @@ import {
   type ArtifactDetails,
   type ArtifactVersion,
 } from "@/api/client";
+import {failureMessage} from "@/lib/presentation";
 import claudeLogoUrl from "./assets/agents/claude.svg";
 import codexDarkLogoUrl from "./assets/agents/codex-dark.svg";
 import codexLightLogoUrl from "./assets/agents/codex-light.svg";
@@ -182,7 +183,7 @@ export function ReviewShareControl({
       setScreen("overview");
     } catch (caught) {
       setFailure(
-        caught instanceof Error ? caught.message : "Artifact access could not be changed.",
+        caught instanceof Error ? failureMessage(caught) : "Artifact access could not be changed.",
       );
     } finally {
       setPending(false);
