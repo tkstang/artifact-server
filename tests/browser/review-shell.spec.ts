@@ -186,4 +186,29 @@ test.describe("Review shell", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("CMT-015-F: Escape closes the panel that overlays the artifact", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await fixture.page.setViewportSize({height: 768, width: 1024});
+      await localLogin(fixture);
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const inspector = fixture.page.getByRole("complementary", {name: "Artifact inspector"});
+      await fixture.page.getByRole("button", {name: "Open inspector"}).click();
+      await fixture.page.getByRole("tab", {name: "Details"}).focus();
+      await fixture.page.keyboard.press("Escape");
+      await expect(inspector).toBeHidden();
+      await expect(fixture.page.locator("#review-preview")).toBeFocused();
+
+      // The catalog stays open from the wider layout and now overlays the artifact.
+      await fixture.page.setViewportSize({height: 844, width: 390});
+      const catalog = fixture.page.getByRole("complementary", {name: "Artifact catalog"});
+      await expect(catalog).toBeVisible();
+      await fixture.page.keyboard.press("Escape");
+      await expect(catalog).toHaveCount(0);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });

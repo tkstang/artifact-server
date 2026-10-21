@@ -69,7 +69,6 @@ import {
 } from "@/lib/presentation";
 import {useHorizontalOverflow} from "@/lib/use-horizontal-overflow";
 import {reviewAnchorSchema} from "@/review-frame/protocol";
-import {useMediaQuery} from "@/lib/use-media-query";
 import artifactServerAnimationUrl from "./assets/artifact-server.svg";
 import {ArtifactMark} from "./artifact-mark.tsx";
 import {
@@ -107,6 +106,9 @@ const catalogOverlayQuery = "(max-width: 720px)";
 const inspectorOverlayQuery = "(max-width: 1180px)";
 
 function reviewShortcutBlocked(event: KeyboardEvent): boolean {
+  // Escape closes layers from anywhere except fields and open popups; letter
+  // and arrow shortcuts also stay out of composite widgets that use them.
+  const escape = event.key === "Escape";
   if (
     event.defaultPrevented
     || event.isComposing
@@ -127,9 +129,7 @@ function reviewShortcutBlocked(event: KeyboardEvent): boolean {
     "[role='dialog']",
     "[role='listbox']",
     "[role='menu']",
-    "[role='radiogroup']",
-    "[role='slider']",
-    "[role='tablist']",
+    ...escape ? [] : ["[role='radiogroup']", "[role='slider']", "[role='tablist']"],
   ].join(", "))) {
     return true;
   }
@@ -657,16 +657,14 @@ function ArtifactReview({
       ...new Set([...current, ...details.artifact.tags]),
     ].toSorted());
   }, [details]);
-  const inspectorOverlays = useMediaQuery(inspectorOverlayQuery);
-  const catalogOverlays = useMediaQuery(catalogOverlayQuery);
   // "Show in page" selects a thread to reveal its anchor; a panel that
   // overlays the artifact would cover it, so it steps aside first.
   const revealThreadInDocument = (threadId: string | null): void => {
     comments.selectThread(threadId);
     if (threadId === null) return;
     if (focusMode) {
-      if (catalogOverlays) setFocusCommentsOpen(false);
-    } else if (inspectorOverlays) {
+      if (panelOverlays(catalogOverlayQuery)) setFocusCommentsOpen(false);
+    } else if (panelOverlays(inspectorOverlayQuery)) {
       setInspectorOpen(false);
     }
   };
@@ -1256,9 +1254,19 @@ function ArtifactReview({
 
       const key = event.key.toLowerCase();
       if (key === "escape") {
+        const closeOverlay = (panel: string, close: () => void): void => {
+          event.preventDefault();
+          const focusWasInside = (document.activeElement?.closest(panel) ?? null) !== null;
+          close();
+          if (focusWasInside) previewPanelRef.current?.focus({preventScroll: true});
+        };
         if (focusCommentsOpen) {
           event.preventDefault();
           setFocusCommentsOpen(false);
+        } else if (!focusMode && catalogOpen && panelOverlays(catalogOverlayQuery)) {
+          closeOverlay(".as-catalog", () => setCatalogOpen(false));
+        } else if (!focusMode && inspectorOpen && panelOverlays(inspectorOverlayQuery)) {
+          closeOverlay(".as-inspector", () => setInspectorOpen(false));
         } else if (htmlAnnotateModeActive) {
           event.preventDefault();
           setHtmlAnnotateModeActive(false);
@@ -1307,12 +1315,14 @@ function ArtifactReview({
     return () => window.removeEventListener("keydown", handleReviewShortcut);
   }, [
     catalogItems,
+    catalogOpen,
     enterFocusMode,
     exitFocusMode,
     focusCommentsOpen,
     focusMode,
     homeOpen,
     htmlAnnotateModeActive,
+    inspectorOpen,
     selectArtifact,
     selectedIndex,
     selectedVersionId,
@@ -2859,13 +2869,18 @@ export function initialReviewTheme(): ReviewTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "moon" : "dawn";
 }
 
+/** Whether a side panel currently overlays the artifact instead of sitting beside it. */
+function panelOverlays(query: typeof catalogOverlayQuery | typeof inspectorOverlayQuery): boolean {
+  return window.matchMedia(query).matches;
+}
+
 /** A link that names an artifact opens on the document where the catalog would cover it. */
 function readInitialCatalogOpen(location: ReviewLocation): boolean {
-  return location.artifactId === null || !window.matchMedia(catalogOverlayQuery).matches;
+  return location.artifactId === null || !panelOverlays(catalogOverlayQuery);
 }
 
 function readInitialInspectorOpen(): boolean {
-  return !window.matchMedia(inspectorOverlayQuery).matches;
+  return !panelOverlays(inspectorOverlayQuery);
 }
 
 function readReviewLocation(): ReviewLocation {
