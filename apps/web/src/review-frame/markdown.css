@@ -16,7 +16,7 @@
 :root.light {
   --md-paper: color-mix(in srgb, var(--background, #fffefa) 24%, #fbfaf7);
   --md-ink: color-mix(in srgb, var(--foreground, #37352f) 12%, #37352f);
-  --md-soft-ink: #75736d;
+  --md-soft-ink: #6b6963;
   --md-line: #e8e5de;
   --md-line-strong: #c8c4ba;
   --md-wash: #f2f0ea;
@@ -25,7 +25,7 @@
   --md-keyword: #7652a6;
   --md-string: #3f6b49;
   --md-number: #8c542b;
-  --md-comment: #73746e;
+  --md-comment: #6b6963;
 }
 * { box-sizing: border-box; }
 html { background: var(--md-paper); }
@@ -42,7 +42,9 @@ body {
   padding-block: 40px 96px;
   container-type: inline-size;
 }
-.md-document { overflow-wrap: anywhere; }
+.md-document { overflow-wrap: break-word; }
+/* Long tokens (URLs, identifiers) may break anywhere; ordinary words never do. */
+.md-document :is(p, li, blockquote) code, .md-document a { overflow-wrap: anywhere; }
 .md-document > :first-child { margin-top: 0; }
 .md-document h1 {
   font-size: clamp(1.85rem, 4.4cqi, 2.3rem);
