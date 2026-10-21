@@ -520,8 +520,10 @@ body {
   font-size: 0.6875rem;
 }
 
-/* Where a panel overlays the artifact, an unblurred scrim sits behind it and
-   a click outside closes it; docked panels never show one. */
+/* Where a panel overlays the artifact, a click outside closes it. Docked
+   panels never show a catcher. Where the document stays readable beside the
+   overlay the catcher is transparent; only on phones, where the panel covers
+   most of the document, does an unblurred scrim dim it. */
 .as-overlay-scrim {
   display: none;
 }
@@ -534,8 +536,7 @@ body {
 
 @media (max-width: 1180px) {
   .as-overlay-scrim[data-panel="inspector"] {
-    animation: as-scrim-in 160ms ease;
-    background: var(--as-scrim);
+    background: transparent;
     display: block;
     inset: 0;
     position: absolute;
@@ -544,6 +545,11 @@ body {
 }
 
 @media (max-width: 720px) {
+  .as-overlay-scrim[data-panel="inspector"] {
+    animation: as-scrim-in 160ms ease;
+    background: var(--as-scrim);
+  }
+
   .as-overlay-scrim[data-panel="catalog"] {
     animation: as-scrim-in 160ms ease;
     background: var(--as-scrim);

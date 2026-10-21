@@ -415,7 +415,7 @@ test.describe("Review shell", () => {
     }
   });
 
-  test("CMT-015-F: an overlaying panel sits over a scrim and closes on an outside click", async ({browser}) => {
+  test("CMT-015-F: an overlaying panel closes on an outside click and dims the document only on a phone", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {
       const published = await publishShellFixture(fixture);
@@ -423,19 +423,32 @@ test.describe("Review shell", () => {
       await localLogin(fixture);
       await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
       const inspector = fixture.page.getByRole("complementary", {name: "Artifact inspector"});
-      const scrim = fixture.page.locator(".as-overlay-scrim[data-panel='inspector']");
+      const catcher = fixture.page.locator(".as-overlay-scrim[data-panel='inspector']");
+      const background = async (): Promise<string> => catcher.evaluate((element) => getComputedStyle(element).backgroundColor);
       await expect(inspector).toBeVisible();
-      // Docked beside the artifact, the inspector needs no scrim.
-      await expect(scrim).toBeHidden();
+      // Docked beside the artifact, the inspector needs no catcher.
+      await expect(catcher).toBeHidden();
 
+      // Overlaying a laptop-width document, the inspector leaves the document
+      // readable beside it: the catcher takes outside clicks without dimming.
       await fixture.page.setViewportSize({height: 768, width: 1024});
-      await expect(scrim).toBeVisible();
+      await expect(catcher).toBeVisible();
+      expect(await background()).toBe("rgba(0, 0, 0, 0)");
       const previewWidth = (await fixture.page.locator(".as-preview-panel").boundingBox())?.width ?? 0;
       expect(previewWidth).toBeGreaterThan(600);
       // Over the artifact, outside the panel (the catalog stays docked at this width).
       await fixture.page.mouse.click(480, 400);
       await expect(inspector).toBeHidden();
-      await expect(scrim).toHaveCount(0);
+      await expect(catcher).toHaveCount(0);
+
+      // On a phone the panel covers most of the document, so a scrim dims it.
+      await fixture.page.setViewportSize({height: 844, width: 390});
+      // The catalog, docked at 1024, now overlays; set it aside first.
+      await fixture.page.getByRole("button", {name: "Collapse artifact catalog"}).click();
+      await fixture.page.getByRole("button", {name: "Open inspector"}).click();
+      await expect(inspector).toBeVisible();
+      await expect(catcher).toBeVisible();
+      expect(await background()).not.toBe("rgba(0, 0, 0, 0)");
     } finally {
       await stopBrowserFixture(fixture);
     }
