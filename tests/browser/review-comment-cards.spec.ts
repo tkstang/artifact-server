@@ -381,8 +381,10 @@ test.describe("Artifact Server Review comment cards", () => {
       await page.getByRole("button", {name: "Show sent comments"}).click();
       await expect(page.getByRole("button", {name: "Sent (1)"}))
         .toHaveAttribute("aria-pressed", "true");
-      await expect(page.getByRole("article").filter({hasText: "Please tighten the intro."}))
-        .toContainText("With builder");
+      // Under Sent the dispatch chip alone carries the state; no second line.
+      const sentCard = page.getByRole("article").filter({hasText: "Please tighten the intro."});
+      await expect(sentCard.locator("header")).toContainText("Queued");
+      await expect(sentCard.locator(".as-comment-card__state")).toHaveCount(0);
 
       // All keeps sent comments out (DSP-004) and says where they are.
       await page.getByRole("button", {exact: true, name: "All"}).click();

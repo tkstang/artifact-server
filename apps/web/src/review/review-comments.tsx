@@ -37,7 +37,6 @@ import {
 } from "@/components/comments/comment-poll";
 import {failureMessage, formatTimestamp} from "@/lib/presentation";
 import {
-  agentHoldsTheComment,
   agentWorkOf,
   agentWorkSentence,
 } from "@/components/dispatch/agent-work";
@@ -948,14 +947,11 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
           const replyingAgent = thread.state === "open" && lastReply !== undefined
             ? agentsByPrincipal.get(lastReply.author.principalId)
             : undefined;
-          const holder = sentDispatch !== undefined && agentHoldsTheComment(sentDispatch)
-            ? sentDispatch.agentDisplayName
-            : null;
-          const stateLine = replyingAgent !== undefined
-            ? `${replyingAgent.displayName} replied — check it and resolve`
-            : holder === null
-              ? null
-              : `With ${holder}`;
+          // Under Sent the dispatch chip carries the comment's state, so the
+          // card adds no second "With <agent>" line.
+          const stateLine = replyingAgent === undefined
+            ? null
+            : `${replyingAgent.displayName} replied — check it and resolve`;
           const anchor = documentAnchorOf(thread);
           const anchored = anchor !== null;
           const quote = anchor === null ? "" : quotedPassage(anchor);
