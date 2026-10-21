@@ -61,6 +61,7 @@ import {
   sourceDriftDescription,
   sourceFreshnessLabel,
 } from "@/lib/presentation";
+import {useHorizontalOverflow} from "@/lib/use-horizontal-overflow";
 import artifactServerAnimationUrl from "./assets/artifact-server.svg";
 import {ArtifactMark} from "./artifact-mark.tsx";
 import {
@@ -572,6 +573,7 @@ function ArtifactReview({
   const [htmlAnnotateModeActive, setHtmlAnnotateModeActive] = useState(true);
   const [homeOpen, setHomeOpen] = useState(false);
   const focusCommentsButtonRef = useRef<HTMLButtonElement>(null);
+  const inspectorTabListRef = useRef<HTMLDivElement>(null);
   const focusControlsRestoreRef = useRef<HTMLButtonElement>(null);
   const previewPanelRef = useRef<HTMLElement>(null);
   const commentsInspectorRef = useRef<ReviewCommentsInspectorHandle>(null);
@@ -607,6 +609,16 @@ function ArtifactReview({
     inspectorResize.width,
     inspectorGapPixels,
   );
+  const inspectorTabOverflow = useHorizontalOverflow(
+    inspectorTabListRef,
+    `${inspectorMotion.mounted}:${comparison === null ? "" : "compare"}`,
+  );
+  useEffect(() => {
+    // Keep the selected tab in view when the strip scrolls.
+    inspectorTabListRef.current
+      ?.querySelector<HTMLElement>(`#review-inspector-tab-${inspectorTab}`)
+      ?.scrollIntoView({block: "nearest", inline: "nearest"});
+  }, [inspectorMotion.mounted, inspectorTab]);
   useEffect(() => {
     catalogWidthApplyRef.current = (width) => catalogMotion.width.set(width);
     inspectorWidthApplyRef.current = (width) => inspectorMotion.width.set(width);
@@ -1961,11 +1973,17 @@ function ArtifactReview({
                 style={{width: inspectorMotion.width}}
               >
           <header className="as-pane-header as-inspector__header">
-            <div aria-label="Artifact inspector" className="as-tabs" role="tablist">
+            <div
+              aria-label="Artifact inspector"
+              className="as-tabs"
+              data-overflow={inspectorTabOverflow}
+              ref={inspectorTabListRef}
+              role="tablist"
+            >
               <InspectorTabButton active={inspectorTab === "comments"} count={openCommentCount} label="Comments" onClick={() => setInspectorTab("comments")} tab="comments" />
               <InspectorTabButton active={inspectorTab === "details"} label="Details" onClick={() => setInspectorTab("details")} tab="details" />
-              <InspectorTabButton active={inspectorTab === "files"} count={selectedVersion?.manifest.entries.length ?? 0} label="Files" onClick={() => setInspectorTab("files")} tab="files" />
-              <InspectorTabButton active={inspectorTab === "versions"} count={versions.length} label="Versions" onClick={() => setInspectorTab("versions")} tab="versions" />
+              <InspectorTabButton active={inspectorTab === "files"} label="Files" onClick={() => setInspectorTab("files")} tab="files" />
+              <InspectorTabButton active={inspectorTab === "versions"} label="Versions" onClick={() => setInspectorTab("versions")} tab="versions" />
               <InspectorTabButton active={inspectorTab === "activity"} label="Activity" onClick={() => setInspectorTab("activity")} tab="activity" />
               {comparison === null ? null : (
                 <InspectorTabButton active={inspectorTab === "compare"} label="Compare" onClick={() => setInspectorTab("compare")} tab="compare" />
@@ -2642,7 +2660,7 @@ function InspectorTabButton({
       type="button"
     >
       {label}
-      {count === undefined ? null : <span>{count}</span>}
+      {count === undefined || count === 0 ? null : <span>{count}</span>}
     </button>
   );
 }

@@ -198,7 +198,8 @@ test.describe("Linked artifacts", () => {
       await expect(
         fixture.page.getByText("In sync", {exact: true}),
       ).toBeVisible({timeout: 30_000});
-      await expect(fixture.page.getByRole("tab", {name: "Versions 2"})).toBeVisible();
+      await fixture.page.getByRole("tab", {name: "Versions"}).click();
+      await expect(fixture.page.locator(".as-version-list li")).toHaveCount(2);
 
       await expect(async () => {
         expect(await versionCount(fixture, linked.artifact.id)).toBe(2);
