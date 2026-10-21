@@ -21,7 +21,8 @@ version, or "Version N of M" for an older one, followed by when it was saved.
 
 **Copy review link** copies the exact review link: it stays pinned to the version
 you are looking at and opens it in full screen. People with access to this
-server can open it and comment. **Manage access** switches the artifact between
+server can open it; commenting also needs comment permission and an active
+(not archived) project. **Manage access** switches the artifact between
 Private and Public link.
 
 **More ways to share** has the other options:
