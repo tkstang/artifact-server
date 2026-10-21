@@ -603,6 +603,11 @@ function ArtifactReview({
   // in-document save appears in its composer.
   const [restoredDraftGeneration, setRestoredDraftGeneration] = useState(0);
   const focusCommentsButtonRef = useRef<HTMLButtonElement>(null);
+  const openCatalogButtonRef = useRef<HTMLButtonElement>(null);
+  const openInspectorButtonRef = useRef<HTMLButtonElement>(null);
+  // The panel Escape just closed while it held focus; once it has closed,
+  // focus returns to the control that reopens it instead of the page body.
+  const returnFocusFromRef = useRef<"catalog" | "focus-comments" | "inspector" | null>(null);
   const inspectorTabListRef = useRef<HTMLDivElement>(null);
   const focusControlsRestoreRef = useRef<HTMLButtonElement>(null);
   const previewPanelRef = useRef<HTMLElement>(null);
@@ -1282,19 +1287,22 @@ function ArtifactReview({
 
       const key = event.key.toLowerCase();
       if (key === "escape") {
-        const closeOverlay = (panel: string, close: () => void): void => {
+        const closeOverlay = (
+          panel: string,
+          returnFrom: "catalog" | "focus-comments" | "inspector",
+          close: () => void,
+        ): void => {
           event.preventDefault();
           const focusWasInside = (document.activeElement?.closest(panel) ?? null) !== null;
+          if (focusWasInside) returnFocusFromRef.current = returnFrom;
           close();
-          if (focusWasInside) previewPanelRef.current?.focus({preventScroll: true});
         };
         if (focusCommentsOpen) {
-          event.preventDefault();
-          setFocusCommentsOpen(false);
+          closeOverlay(".as-focus-comments", "focus-comments", () => setFocusCommentsOpen(false));
         } else if (!focusMode && catalogOpen && panelOverlays(catalogOverlayQuery)) {
-          closeOverlay(".as-catalog", () => setCatalogOpen(false));
+          closeOverlay(".as-catalog", "catalog", () => setCatalogOpen(false));
         } else if (!focusMode && inspectorOpen && panelOverlays(inspectorOverlayQuery)) {
-          closeOverlay(".as-inspector", () => setInspectorOpen(false));
+          closeOverlay(".as-inspector", "inspector", () => setInspectorOpen(false));
         } else if (htmlAnnotateModeActive) {
           event.preventDefault();
           setHtmlAnnotateModeActive(false);
@@ -1355,6 +1363,19 @@ function ArtifactReview({
     selectedIndex,
     selectedVersionId,
   ]);
+  useEffect(() => {
+    const returnFrom = returnFocusFromRef.current;
+    if (returnFrom === null) return;
+    const open = returnFrom === "catalog" ? catalogOpen
+      : returnFrom === "inspector" ? inspectorOpen
+      : focusCommentsOpen;
+    if (open) return;
+    returnFocusFromRef.current = null;
+    const target = returnFrom === "catalog" ? openCatalogButtonRef.current
+      : returnFrom === "inspector" ? openInspectorButtonRef.current
+      : focusCommentsButtonRef.current;
+    (target ?? previewPanelRef.current)?.focus({preventScroll: true});
+  }, [catalogOpen, focusCommentsOpen, inspectorOpen]);
   const hideFocusControls = (event: ReactMouseEvent<HTMLButtonElement>): void => {
     previewPanelRef.current?.focus({preventScroll: true});
     setFocusControlsHoverArmed(event.detail === 0);
@@ -1896,6 +1917,7 @@ function ArtifactReview({
                   keyShortcuts="["
                   label="Open artifact catalog"
                   onClick={() => setCatalogOpen(true)}
+                  ref={openCatalogButtonRef}
                   title="Open artifact catalog ([)"
                 >
                   <HugeiconsIcon icon={LayoutLeftIcon} strokeWidth={1.8} />
@@ -1959,6 +1981,7 @@ function ArtifactReview({
                   keyShortcuts="]"
                   label="Open inspector"
                   onClick={() => setInspectorOpen(true)}
+                  ref={openInspectorButtonRef}
                   title="Open inspector (])"
                 >
                   <HugeiconsIcon icon={PanelRightIcon} strokeWidth={1.8} />
@@ -3118,6 +3141,7 @@ function IconButton({
   keyShortcuts,
   label,
   onClick,
+  ref,
   title,
 }: {
   readonly active?: boolean;
@@ -3126,6 +3150,7 @@ function IconButton({
   readonly keyShortcuts?: string;
   readonly label: string;
   readonly onClick: () => void;
+  readonly ref?: React.Ref<HTMLButtonElement>;
   readonly title?: string;
 }) {
   return (
@@ -3137,6 +3162,7 @@ function IconButton({
       data-active={active}
       disabled={disabled}
       onClick={onClick}
+      ref={ref}
       title={title ?? label}
       type="button"
     >

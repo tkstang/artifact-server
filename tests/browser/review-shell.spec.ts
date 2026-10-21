@@ -220,7 +220,7 @@ test.describe("Review shell", () => {
     }
   });
 
-  test("CMT-015-F: Escape closes the panel that overlays the artifact", async ({browser}) => {
+  test("CMT-015-F: Escape closes the panel that overlays the artifact and returns focus to its toggle", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {
       const published = await publishShellFixture(fixture);
@@ -232,14 +232,23 @@ test.describe("Review shell", () => {
       await fixture.page.getByRole("tab", {name: "Details"}).focus();
       await fixture.page.keyboard.press("Escape");
       await expect(inspector).toBeHidden();
-      await expect(fixture.page.locator("#review-preview")).toBeFocused();
+      await expect(fixture.page.getByRole("button", {name: "Open inspector"})).toBeFocused();
 
       // The catalog stays open from the wider layout and now overlays the artifact.
       await fixture.page.setViewportSize({height: 844, width: 390});
       const catalog = fixture.page.getByRole("complementary", {name: "Artifact catalog"});
       await expect(catalog).toBeVisible();
+      await catalog.getByRole("button", {name: "Collapse artifact catalog"}).focus();
       await fixture.page.keyboard.press("Escape");
       await expect(catalog).toHaveCount(0);
+      await expect(fixture.page.getByRole("button", {name: "Open artifact catalog"})).toBeFocused();
+
+      // On a phone the inspector overlays too, and Escape hands focus back the same way.
+      await fixture.page.getByRole("button", {name: "Open inspector"}).click();
+      await fixture.page.getByRole("tab", {name: "Details"}).focus();
+      await fixture.page.keyboard.press("Escape");
+      await expect(inspector).toBeHidden();
+      await expect(fixture.page.getByRole("button", {name: "Open inspector"})).toBeFocused();
     } finally {
       await stopBrowserFixture(fixture);
     }
