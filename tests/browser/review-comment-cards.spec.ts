@@ -121,4 +121,57 @@ test.describe("Artifact Server Review comment cards", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("a failed first comment read shows one retryable error instead of an empty conversation", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Read failure fixture</h1></html>",
+        idempotencyKey: "review-comment-read-failure",
+        name: "Read failure fixture",
+      });
+      const artifactId = published.body.artifact.id;
+      await createThreadOverApi(fixture, {
+        artifactId,
+        body: "A comment that exists.",
+        idempotencyKey: "review-comment-read-failure-thread",
+        versionId: published.body.version.id,
+      });
+      const page = fixture.page;
+      let available = false;
+      await page.route(
+        (url) => url.pathname.endsWith(`/artifacts/${artifactId}/comments`),
+        (route) => available || route.request().method() !== "GET"
+          ? route.continue()
+          : route.fulfill({
+            body: JSON.stringify({
+              error: {code: "UNAVAILABLE", message: "Comments are unavailable."},
+            }),
+            contentType: "application/json",
+            status: 503,
+          }),
+      );
+
+      await localLogin(fixture);
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: artifactId,
+        project: "prj_default",
+        version: published.body.version.id,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      const failure = page.locator(".as-comments__read-error");
+      await expect(failure).toContainText("Comments could not be loaded.");
+      await expect(page.getByText(/No open comments|are resolved/u)).toHaveCount(0);
+      await expect(page.getByRole("button", {name: /^Send all open/u})).toHaveCount(0);
+
+      available = true;
+      await failure.getByRole("button", {name: "Try again"}).click();
+      await expect(page.getByRole("article").filter({hasText: "A comment that exists."}))
+        .toBeVisible();
+      await expect(failure).toHaveCount(0);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });

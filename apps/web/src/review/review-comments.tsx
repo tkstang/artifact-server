@@ -148,7 +148,13 @@ export interface ReviewCommentSession {
     idempotencyKey: string,
   ) => Promise<boolean>;
   readonly deleteReply: (reply: CommentReply) => Promise<void>;
+  /** The last mutation failure, shown beside the threads it concerns. */
   readonly error: Error | null;
+  /**
+   * The last full read's failure, cleared by the next successful read. With
+   * no threads loaded it means the conversation is unknown, not empty.
+   */
+  readonly loadError: Error | null;
   readonly loading: boolean;
   readonly projectId: string;
   readonly reload: () => Promise<void>;
@@ -192,6 +198,7 @@ export function useReviewComments({
   const [unanchoredIds, setUnanchoredIds] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const watermarkRef = useRef<string | null>(null);
   const reloadGenerationRef = useRef(0);
   const threadUpdatedAtRef = useRef<ReadonlyMap<string, string>>(new Map());
@@ -207,6 +214,7 @@ export function useReviewComments({
       setSelectedThreadId(null);
       setUnanchoredIds([]);
       setError(null);
+      setLoadError(null);
       return;
     }
     setLoading(true);
@@ -229,10 +237,11 @@ export function useReviewComments({
         setRepliesByThread(new Map(
           conversations.map(({replies, thread}) => [thread.id, replies]),
         ));
+        setLoadError(null);
       });
     } catch (caught) {
       if (reloadGenerationRef.current !== generation) return;
-      setError(
+      setLoadError(
         caught instanceof Error ? caught : new Error("Comment loading failed."),
       );
     } finally {
@@ -245,6 +254,7 @@ export function useReviewComments({
     setRepliesByThread(new Map());
     setSelectedThreadId(null);
     setUnanchoredIds([]);
+    setLoadError(null);
     void reload();
   }, [reload]);
 
@@ -425,6 +435,7 @@ export function useReviewComments({
     createReply,
     deleteReply,
     error,
+    loadError,
     loading,
     projectId,
     reload,
@@ -653,6 +664,10 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
         : resolvedThreads;
   const visibleReplies = view === "sent" ? sentReplies : session.repliesByThread;
   const loadingVisible = view === "sent" ? sentLoading : session.loading;
+  // A failed first read leaves the conversation unknown: no count, list or
+  // empty state may stand in for it. A failed later read keeps what loaded.
+  const readFailed = session.loadError !== null && session.threads.length === 0;
+  const sentReadFailed = sentError !== null && sentThreads.length === 0;
   const now = Date.now();
 
   const cancelDispatch = async (dispatch: AgentDispatch): Promise<void> => {
@@ -686,7 +701,20 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
       {agentError === null ? null : (
         <p className="as-comments__agent-error">{agentError.message}</p>
       )}
-      {canComment ? (
+      {readFailed ? (
+        <div className="as-comments__read-error" role="alert">
+          <p>Comments could not be loaded. {session.loadError?.message}</p>
+          <button
+            className="as-button"
+            disabled={session.loading}
+            onClick={() => void reloadDispatchSurface()}
+            type="button"
+          >
+            {session.loading ? "Trying again…" : "Try again"}
+          </button>
+        </div>
+      ) : null}
+      {canComment && !readFailed ? (
         <div className="as-comments__send-all">
           <SendToAgentControl
             agents={agents}
@@ -711,27 +739,34 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
       {session.error === null ? null : (
         <p className="as-comments__error" role="alert">{session.error.message}</p>
       )}
-      {sentError === null ? null : (
+      {readFailed ? null : session.loadError === null ? null : (
+        <p className="as-comments__error" role="alert">
+          Comments could not be refreshed; showing the last loaded ones.
+        </p>
+      )}
+      {sentError === null || readFailed ? null : (
         <p className="as-comments__error" role="alert">{sentError.message}</p>
       )}
-      <nav aria-label="Comment filters" className="as-comments__filters">
-        {(["open", "all", "resolved", "sent"] as const).map((candidate) => (
-          <button
-            aria-pressed={view === candidate}
-            className="as-button"
-            key={candidate}
-            onClick={() => setView(candidate)}
-            type="button"
-          >
-            {candidate === "all"
-              ? "All"
-              : candidate === "sent"
-                ? `Sent (${sentThreads.length})`
-                : `${candidate[0]?.toUpperCase()}${candidate.slice(1)}`}
-          </button>
-        ))}
-      </nav>
-      {canComment && versionId !== null && session.artifactId !== null ? (
+      {readFailed ? null : (
+        <nav aria-label="Comment filters" className="as-comments__filters">
+          {(["open", "all", "resolved", "sent"] as const).map((candidate) => (
+            <button
+              aria-pressed={view === candidate}
+              className="as-button"
+              key={candidate}
+              onClick={() => setView(candidate)}
+              type="button"
+            >
+              {candidate === "all"
+                ? "All"
+                : candidate === "sent"
+                  ? sentReadFailed ? "Sent" : `Sent (${sentThreads.length})`
+                  : `${candidate[0]?.toUpperCase()}${candidate.slice(1)}`}
+            </button>
+          ))}
+        </nav>
+      )}
+      {canComment && !readFailed && versionId !== null && session.artifactId !== null ? (
         <NewThreadComposer
           artifactId={session.artifactId}
           key={`${session.artifactId}-${versionId}`}
@@ -740,10 +775,11 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
           versionId={versionId}
         />
       ) : null}
-      {loadingVisible && visibleThreads.length === 0 ? (
+      {loadingVisible && !readFailed && visibleThreads.length === 0 ? (
         <p className="as-inspector-empty">Loading comments…</p>
       ) : null}
-      {!loadingVisible && visibleThreads.length === 0 ? (
+      {!loadingVisible && !readFailed && !(view === "sent" && sentReadFailed)
+          && visibleThreads.length === 0 ? (
         <p className="as-inspector-empty">
           {view === "all"
             ? "No comments on this version yet."
