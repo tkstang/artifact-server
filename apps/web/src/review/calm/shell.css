@@ -1,0 +1,95 @@
+/* Calm shell: panels rest on a warm canvas; borders only where panes meet. */
+
+.as-app,
+body {
+  background: var(--as-canvas);
+}
+
+.as-catalog {
+  background: var(--as-canvas);
+}
+
+.as-preview-panel,
+.as-inspector {
+  border-color: var(--as-border);
+  border-radius: var(--as-radius-lg) var(--as-radius-lg) 0 0;
+  box-shadow: var(--as-shadow-1);
+}
+
+/* The empty preview canvas is plain, not graph paper. */
+.as-preview-panel__body {
+  background: var(--as-canvas);
+}
+
+/* Catalog rows: rounded hover rows, two-line titles, a quiet selected state. */
+.as-artifact-card {
+  border-bottom: 0;
+  border-radius: var(--as-radius);
+  margin: 1px 0.5rem;
+  min-height: 0;
+  padding: 0.6rem 0.65rem;
+  width: calc(100% - 1rem);
+}
+
+.as-artifact-card:hover {
+  background: var(--as-hover);
+}
+
+.as-artifact-card[data-selected="true"] {
+  background: var(--as-selected);
+  box-shadow: inset 2px 0 0 var(--as-iris);
+}
+
+.as-artifact-card__title-row strong {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: normal;
+}
+
+.as-artifact-card[data-selected="true"] .as-artifact-card__title-row strong {
+  font-weight: 600;
+}
+
+.as-artifact-card__meta {
+  font-size: 0.75rem;
+}
+
+.as-catalog__footer button {
+  font-size: 0.8125rem;
+}
+
+.as-catalog__brand-mark {
+  border-radius: 8px;
+}
+
+/* Document header: identity first, actions quiet. */
+.as-preview-header {
+  border-bottom: 1px solid var(--as-border);
+}
+
+.as-preview-header h1 {
+  font-size: 1rem;
+}
+
+.as-preview-header__actions .as-button--secondary,
+.as-preview-header__actions .as-button--primary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--as-subtle);
+  font-weight: 500;
+}
+
+.as-preview-header__actions .as-button--secondary:hover:not(:disabled),
+.as-preview-header__actions .as-button--primary:hover:not(:disabled) {
+  background: var(--as-hover);
+  color: var(--as-text);
+}
+
+.as-app-footer,
+.as-preview-footer {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}

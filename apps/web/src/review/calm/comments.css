@@ -1,0 +1,197 @@
+/* Calm comments: a conversation, not a log. Send all stays the one primary. */
+
+.as-comments {
+  --as-comments-control-font-size: 0.8125rem;
+  --as-comments-control-height: 2rem;
+}
+
+.as-comments__agents {
+  border-bottom: 0;
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.as-comments__agents strong {
+  font-size: 0.8125rem;
+}
+
+.as-comments__agents span,
+.as-comments__agent-error {
+  font-size: 0.75rem;
+}
+
+.as-comments__send-all {
+  border-bottom: 0;
+  padding: 0.5rem 1rem 0.75rem;
+}
+
+.as-comments__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0 1rem 0.6rem;
+}
+
+.as-comments__filters .as-button {
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.7rem;
+}
+
+.as-comments__filters .as-button[aria-pressed="true"] {
+  background: var(--as-selected);
+  color: var(--as-text);
+  font-weight: 600;
+}
+
+.as-comments [data-new-thread-composer] {
+  background: transparent;
+  padding: 0.75rem 1rem;
+}
+
+.as-comment-composer__label {
+  font-size: 0.8125rem;
+}
+
+.as-comments .as-comment-composer__input {
+  background: var(--as-surface);
+  border-color: var(--as-border-strong);
+  font-size: 0.875rem;
+}
+
+.as-comments .as-comment-composer__input:focus-visible {
+  box-shadow: 0 0 0 2px var(--as-iris-soft);
+}
+
+.as-comment-list {
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 1.25rem;
+}
+
+.as-comment-card {
+  background: var(--as-surface);
+  border-radius: var(--as-radius-lg);
+  box-shadow: 0 0 0 1px var(--as-border), var(--as-shadow-1);
+}
+
+/* The selected thread wears the comment accent, matching its highlight. */
+.as-comment-card[data-selected="true"] {
+  background: var(--as-surface);
+  box-shadow:
+    0 0 0 1px var(--as-annotation),
+    0 0 0 4px var(--as-annotation-wash),
+    var(--as-shadow-2);
+}
+
+.as-comment-card > header {
+  gap: 0.6rem;
+  padding: 0.75rem 0.875rem 0.15rem;
+}
+
+.as-comment-card > header strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.as-comment-card > header span {
+  background: transparent;
+  color: var(--as-subtle);
+  font-size: 0.75rem;
+  padding: 0;
+}
+
+.as-comment-card > header span[data-state="resolved"] {
+  background: transparent;
+  color: var(--as-subtle);
+}
+
+.as-comment-card__body {
+  padding: 0 0.875rem 0.75rem;
+}
+
+.as-comment-card__body > p {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  margin: 0.2rem 0 0.5rem;
+}
+
+.as-comment-card__body > footer {
+  font-size: 0.75rem;
+  gap: 0.5rem;
+}
+
+.as-comment-card__meta,
+.as-comment-card__meta code {
+  color: var(--as-muted);
+}
+
+.as-comment-card__actions {
+  gap: 0.15rem;
+  margin-left: -0.45rem;
+}
+
+.as-comment-card .as-button,
+.as-comment-reply-trigger {
+  border-color: transparent;
+  color: var(--as-subtle);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.as-comment-card .as-button:hover,
+.as-comment-reply-trigger:hover {
+  background: var(--as-hover);
+  border-color: transparent;
+  color: var(--as-text);
+}
+
+.as-comment-card__conversation {
+  background: transparent;
+  border-top: 1px solid var(--as-border);
+  padding: 0.6rem 0.875rem 0.5rem;
+}
+
+.as-comment-card__conversation-label {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.as-comment-replies {
+  gap: 0.75rem;
+}
+
+.as-comment-replies header strong {
+  font-size: 0.8125rem;
+}
+
+.as-comment-replies header time {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-comment-replies p {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.as-comment-reply-composer {
+  padding: 0 0.875rem 0.6rem;
+}
+
+.as-comment-reply-composer[data-expanded="true"] {
+  background: transparent;
+  border-top: 1px solid var(--as-border);
+}
+
+.as-comment-reply-composer label,
+.as-comment-replies label {
+  font-size: 0.8125rem;
+}
+
+.as-comment-reply-composer textarea,
+.as-comment-replies textarea {
+  font-size: 0.875rem;
+}

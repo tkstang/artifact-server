@@ -22,7 +22,7 @@ export function PageHeader({
     <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {eyebrow === undefined ? null : (
-          <p className="mb-2 font-mono text-xs font-semibold tracking-widest text-primary uppercase">
+          <p className="mb-2 text-[0.8125rem] font-medium text-muted-foreground">
             {eyebrow}
           </p>
         )}
@@ -127,7 +127,7 @@ export function MetadataRow({
 }) {
   return (
     <div className="grid gap-1 border-b py-3 last:border-b-0 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
-      <dt className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+      <dt className="text-[0.8125rem] font-medium text-muted-foreground">
         {label}
       </dt>
       <dd className="min-w-0 break-words text-sm">{children}</dd>

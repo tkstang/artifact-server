@@ -476,7 +476,7 @@ export function SendToAgentControl({
           ) : (
             <>
               <fieldset className="grid gap-2">
-                <legend className="mb-2 text-xs font-semibold tracking-wide uppercase">
+                <legend className="mb-2 text-[0.8125rem] font-semibold">
                   Connected agents
                 </legend>
                 {dialogAgents.map((agent) => (

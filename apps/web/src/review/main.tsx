@@ -6,6 +6,7 @@ import { installDraftGuard } from "@/components/comments/comment-drafts";
 import { ReviewApp } from "./review-app.tsx";
 import "../index.css";
 import "./review.css";
+import "./calm/index.css";
 
 // Lives for the whole session, above every route: the leave prompt and the
 // logout purge must not depend on which screen is mounted.

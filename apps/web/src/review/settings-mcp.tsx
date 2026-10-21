@@ -149,7 +149,7 @@ function ConnectionCard({
   return (
     <section className="flex flex-col gap-5 border p-5 sm:p-6">
       <header className="grid gap-2">
-        <p className="font-mono text-xs font-semibold text-primary uppercase">{eyebrow}</p>
+        <p className="text-[0.8125rem] font-medium text-muted-foreground">{eyebrow}</p>
         <h2 className="font-heading text-xl font-semibold text-balance">{title}</h2>
         <p className="text-sm leading-6 text-muted-foreground text-pretty">{description}</p>
       </header>
