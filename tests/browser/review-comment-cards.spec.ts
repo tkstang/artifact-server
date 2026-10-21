@@ -221,6 +221,18 @@ test.describe("Artifact Server Review comment cards", () => {
         .toHaveAttribute("aria-pressed", "true");
       await expect(page.getByRole("article").filter({hasText: "Please tighten the intro."}))
         .toBeVisible();
+
+      // All keeps sent comments out (DSP-004) and says where they are.
+      await page.getByRole("button", {exact: true, name: "All"}).click();
+      await expect(page.getByRole("article").filter({hasText: "Already settled."}))
+        .toBeVisible();
+      await expect(page.getByRole("article").filter({hasText: "Please tighten the intro."}))
+        .toHaveCount(0);
+      await expect(page.getByText("1 sent comment is listed under Sent, not here."))
+        .toBeVisible();
+      await page.getByRole("button", {name: "Show sent comments"}).click();
+      await expect(page.getByRole("button", {name: "Sent (1)"}))
+        .toHaveAttribute("aria-pressed", "true");
     } finally {
       await stopBrowserFixture(fixture);
     }

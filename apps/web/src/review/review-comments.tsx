@@ -806,7 +806,19 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
       {loadingVisible && !readFailed && visibleThreads.length === 0 ? (
         <p className="as-inspector-empty">Loading comments…</p>
       ) : null}
+      {view === "all" && !readFailed && sentThreads.length > 0 ? (
+        // DSP-004 keeps sent comments out of default listings; say so here.
+        <div className="as-inspector-empty as-comments__empty">
+          <p>
+            {sentThreads.length === 1
+              ? "1 sent comment is listed under Sent, not here."
+              : `${sentThreads.length} sent comments are listed under Sent, not here.`}
+          </p>
+          {showSent}
+        </div>
+      ) : null}
       {!loadingVisible && !readFailed && !(view === "sent" && sentReadFailed)
+          && !(view === "all" && sentThreads.length > 0)
           && visibleThreads.length === 0 ? (
         <div className="as-inspector-empty as-comments__empty">
           <p>
