@@ -292,6 +292,21 @@ test.describe("Review shell", () => {
       await fixture.page.keyboard.press("Escape");
       await expect(inspector).toBeHidden();
       await expect(fixture.page.getByRole("button", {name: "Open inspector"})).toBeFocused();
+
+      // In full screen with the viewer controls hidden, the Comments toggle is
+      // unreachable: Escape hands focus to the control that shows them again.
+      await fixture.page.setViewportSize({height: 768, width: 1024});
+      await fixture.page.goto(`${reviewUrl(fixture, published.body.artifact.id, published.body.version.id)}&view=focus`);
+      await fixture.page.getByRole("button", {name: "Hide viewer controls"}).focus();
+      await fixture.page.keyboard.press("Enter");
+      const showControls = fixture.page.getByRole("button", {name: "Show viewer controls"});
+      await expect(showControls).toBeFocused();
+      await fixture.page.keyboard.press("]");
+      const closeComments = fixture.page.getByRole("button", {name: "Close comments"});
+      await closeComments.focus();
+      await fixture.page.keyboard.press("Escape");
+      await expect(closeComments).toBeHidden();
+      await expect(showControls).toBeFocused();
     } finally {
       await stopBrowserFixture(fixture);
     }

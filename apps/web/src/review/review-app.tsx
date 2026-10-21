@@ -1376,11 +1376,14 @@ function ArtifactReview({
       : focusCommentsOpen;
     if (open) return;
     returnFocusFromRef.current = null;
+    // Collapsed viewer controls are inert, so the drawer hands focus to the
+    // control that restores them instead of its unreachable toggle.
     const target = returnFrom === "catalog" ? openCatalogButtonRef.current
       : returnFrom === "inspector" ? openInspectorButtonRef.current
+      : focusControlsCollapsed ? focusControlsRestoreRef.current
       : focusCommentsButtonRef.current;
     (target ?? previewPanelRef.current)?.focus({preventScroll: true});
-  }, [catalogOpen, focusCommentsOpen, inspectorOpen]);
+  }, [catalogOpen, focusCommentsOpen, focusControlsCollapsed, inspectorOpen]);
   const hideFocusControls = (event: ReactMouseEvent<HTMLButtonElement>): void => {
     previewPanelRef.current?.focus({preventScroll: true});
     setFocusControlsHoverArmed(event.detail === 0);
