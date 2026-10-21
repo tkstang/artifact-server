@@ -35,8 +35,10 @@ export function runMermaid(): void {
       block.dataset["diagramState"] = "unavailable";
     };
     // Authors never supply Pele options or Mermaid config: front matter and
-    // %%{init}%% directives would override the review's fixed settings.
-    if (/^\s*---[ \t]*\r?\n/u.test(source) || source.includes("%%{")) {
+    // %%{init}%% directives would override the review's fixed settings. Pele
+    // opens front matter at "---" followed by any whitespace run that holds a
+    // line break, so refuse "---" followed by any whitespace at all.
+    if (/^\s*---\s/u.test(source) || source.includes("%%{")) {
       unavailable("diagram settings (front matter or %%{init}%% directives) aren't applied in review.");
       return;
     }

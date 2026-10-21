@@ -224,6 +224,8 @@ test.describe("Markdown review", () => {
       "flowchart TD\n  A[Styled]\n  style A fill:url(https://tracking.invalid/pixel)",
       'flowchart TD\n  A@{ img: "https://tracking.invalid/pixel.png", label: "Pixel" }',
       'flowchart TD\n  A[<img src="https://tracking.invalid/error.png" onerror="alert(1)">] --> B[[[',
+      // Pele accepts any whitespace after the opening delimiter.
+      ...["\u00a0", "\f", "\v", "\u2028"].map((space) => `---${space}\nconfig:\n  flowchart:\n    useMaxWidth: false\ntitle: Author settings\n---\nflowchart TD\n  A --> B`),
     ];
     const source = ["# Static diagrams", drawn, wide, ...kept].map((value, index) => index === 0 ? value : `\`\`\`mermaid\n${value}\n\`\`\``).join("\n\n");
     const requested: string[] = [];
@@ -247,6 +249,7 @@ test.describe("Markdown review", () => {
       // (Pele's preprocessing quotes the attributes with ' in its snippet.)
       await expect(preview.locator(".md-diagram-error").last()).toContainText(/A\[<img src=["']https:\/\/tracking\.invalid\/error\.png["'] onerror=/u);
       await expect(preview.locator(".md-mermaid img")).toHaveCount(0);
+      await Promise.all([4, 5, 6, 7].map((index) => expect(statuses.nth(index)).toContainText("diagram settings")));
       const diagram = preview.locator('.md-mermaid[data-diagram-state="rendered"] svg').first();
       // Only the https link survives, and it opens like a Markdown link.
       await expect(diagram.locator("a")).toHaveCount(1);
