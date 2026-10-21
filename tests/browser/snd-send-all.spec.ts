@@ -139,7 +139,7 @@ test.describe("Review send-all", () => {
       await expect(preview.locator("button[data-plannotator-marker]")).toHaveCount(1);
 
       await page.getByRole("button", {name: "Send all open (101) to builder"}).click();
-      await expect(page.getByText("Sent 101 threads to builder")).toBeVisible();
+      await expect(page.getByText("Sent 101 comments to builder")).toBeVisible();
       await expect(page.locator(".as-comment-card")).toHaveCount(0);
       await expect(preview.locator("button[data-plannotator-marker]")).toHaveCount(0);
 
@@ -278,7 +278,7 @@ test.describe("Review send-all", () => {
         name: "Choose agent or send with a note",
       }).first().click();
       await page.getByRole("button", {name: "replacement /work/replacement"}).click();
-      await expect(page.getByText("Sent 1 thread to replacement")).toBeVisible();
+      await expect(page.getByText("Sent 1 comment to replacement")).toBeVisible();
 
       // A clean disconnect deletes the registration. The dead id is not a
       // disconnected default: it is forgotten, so the same bridge name under

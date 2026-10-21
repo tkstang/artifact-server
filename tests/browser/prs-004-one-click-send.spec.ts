@@ -103,7 +103,7 @@ test.describe("PRS-004 one-click send and undo", () => {
       // One click, no dialog: the primary button names its destination and
       // sends every open comment on the exact version.
       await page.getByRole("button", {name: "Send all open (2) to solo"}).click();
-      await expect(page.getByText("Sent 2 threads to solo")).toBeVisible();
+      await expect(page.getByText("Sent 2 comments to solo")).toBeVisible();
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(cards).toHaveCount(0);
 
@@ -119,7 +119,7 @@ test.describe("PRS-004 one-click send and undo", () => {
       // Undo while the send is still queued: the annotation comes back.
       await page.getByRole("button", {name: "Undo"}).click();
       await expect(
-        page.getByText("Send canceled — the annotations are back."),
+        page.getByText("Send canceled — the comments are back."),
       ).toBeVisible();
       await expect(cards).toHaveCount(2);
       // The undo really canceled the dispatch on the server.
@@ -135,7 +135,7 @@ test.describe("PRS-004 one-click send and undo", () => {
       // delivered refuses the undo, and says so.
       await cards.filter({hasText: bodies.second})
         .getByRole("button", {name: "Send to solo"}).click();
-      await expect(page.getByText("Sent 1 thread to solo")).toBeVisible();
+      await expect(page.getByText("Sent 1 comment to solo")).toBeVisible();
       const claimed = await agent.client.claim(agent.agentId, 2);
       expect(claimed.status).toBe(200);
       const delivered =

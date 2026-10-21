@@ -37,8 +37,8 @@ type Toast =
   | { readonly kind: "notice"; readonly text: string }
   | { readonly kind: "sent"; readonly sent: SentDispatch };
 
-function threadsWord(count: number): string {
-  return count === 1 ? "1 thread" : `${count} threads`;
+function commentsWord(count: number): string {
+  return count === 1 ? "1 comment" : `${count} comments`;
 }
 
 /**
@@ -92,7 +92,7 @@ export function useDispatchUndo(
     );
     if (failures.length === 0) {
       show(
-        { kind: "notice", text: "Send canceled — the annotations are back." },
+        { kind: "notice", text: "Send canceled — the comments are back." },
         noticeToastMilliseconds,
       );
     } else {
@@ -132,18 +132,18 @@ export function useDispatchUndo(
                 {toast.sent.incompleteCount === undefined
                   ? toast.sent.agent.capabilities?.evidence === "mailbox"
                     ? `Queued for ${toast.sent.agent.displayName} — it picks this up when it next checks in.`
-                    : `Sent ${threadsWord(
+                    : `Sent ${commentsWord(
                       toast.sent.dispatches.reduce(
                         (count, dispatch) => count + dispatch.threadIds.length,
                         0,
                       ),
                     )} to ${toast.sent.agent.displayName}`
-                  : `Sent ${threadsWord(
+                  : `Sent ${commentsWord(
                     toast.sent.dispatches.reduce(
                       (count, dispatch) => count + dispatch.threadIds.length,
                       0,
                     ),
-                  )} to ${toast.sent.agent.displayName}; ${threadsWord(toast.sent.incompleteCount)} could not be sent.`}
+                  )} to ${toast.sent.agent.displayName}; ${commentsWord(toast.sent.incompleteCount)} could not be sent.`}
               </p>
               <Button
                 className="shrink-0"

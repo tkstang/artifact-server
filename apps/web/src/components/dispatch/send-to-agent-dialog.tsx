@@ -28,8 +28,8 @@ import {Textarea} from "@/components/ui/textarea";
 import {errorMessage, formatRelativeTime} from "@/lib/presentation";
 import {cn} from "@/lib/utils";
 
-function annotationCount(count: number): string {
-  return count === 1 ? "1 annotation" : `${count} annotations`;
+function commentCount(count: number): string {
+  return count === 1 ? "1 comment" : `${count} comments`;
 }
 
 function defaultAgentStorageKey(principalId: string, projectId: string): string {
@@ -475,7 +475,7 @@ export function SendToAgentControl({
           <DialogHeader>
             <DialogTitle>Send with a note</DialogTitle>
             <DialogDescription>
-              The annotations in this send leave the open list when it succeeds.
+              The comments in this send leave the open list when it succeeds.
               Undo can call them back while the agent has not completed the send.
             </DialogDescription>
           </DialogHeader>
@@ -565,7 +565,7 @@ export function SendToAgentControl({
                 onClick={() => void sendWithNote()}
                 type="button"
               >
-                {pending ? "Sending…" : `Send ${annotationCount(threadIds.length)}`}
+                {pending ? "Sending…" : `Send ${commentCount(threadIds.length)}`}
               </Button>
             )}
           </DialogFooter>

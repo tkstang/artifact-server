@@ -141,7 +141,7 @@ test.describe("PRS-006 presence avatar", () => {
       // Send all open annotations and let the agent claim them: the dispatch
       // alone derives "working" — the agent never wrote an activity state.
       await sendButton.click();
-      await expect(page.getByText("Sent 2 threads to pres")).toBeVisible();
+      await expect(page.getByText("Sent 2 comments to pres")).toBeVisible();
       expect((await agent.client.claim(agent.agentId, 2)).status).toBe(200);
 
       // The Review agent strip follows live presence independently of the
