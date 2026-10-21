@@ -1147,6 +1147,10 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(share.getByText(published.body.links.version, {exact: true})).toBeVisible();
       await expect(share.getByText("Moves when a new version is published", {exact: true}))
         .toBeVisible();
+      // Contrast is measured on the settled popover, not mid-fade.
+      await share.evaluate((element) => Promise.all(
+        element.getAnimations({subtree: true}).map((animation) => animation.finished),
+      ));
       const shareAccessibility = await new AxeBuilder({page: fixture.page})
         .exclude(".as-artifact-frame")
         // Base UI gives its invisible Safari focus guards a button role only
