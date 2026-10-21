@@ -2023,7 +2023,10 @@ function ArtifactReview({
                     }
                   }
                 }}
-                onSubmitAnnotation={async (body, anchor, path) => {
+                onSubmitAnnotation={async (rawBody, anchor, path) => {
+                  // Post the body the panel composer would post, so a retry of
+                  // the restored draft is the same request under the same key.
+                  const body = rawBody.trim();
                   const idempotencyKey = crypto.randomUUID();
                   const saved = await comments.submit(body, anchor, path, idempotencyKey);
                   if (!saved && newThreadDraftContext !== null && selectedVersionId !== null) {

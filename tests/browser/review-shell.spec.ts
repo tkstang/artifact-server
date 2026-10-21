@@ -149,6 +149,38 @@ test.describe("Review shell", () => {
     }
   });
 
+  test("DRF-001-F: a lost in-document save padded with whitespace is retried from the panel as the same request", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await localLogin(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      const sent = await loseFirstCommittedCommentResponse(fixture.page);
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const reviewFrame = fixture.page.frameLocator(".as-artifact-frame");
+      const preview = reviewFrame.frameLocator("iframe");
+      await preview.locator("#shell-target").hover();
+      await preview.locator("#shell-target").click();
+      await reviewFrame.getByPlaceholder("Add a comment...").fill("  Spaced body  ");
+      await reviewFrame.getByRole("button", {name: "Save"}).click();
+
+      // The panel composer trims what it posts; the retry must still be the
+      // request the server already stored, not a second comment.
+      const composer = fixture.page.getByLabel("Add a comment");
+      await expect(composer).toHaveValue(/Spaced body/u);
+      expect(await listThreadsOverApi(fixture, published.body.artifact.id)).toHaveLength(1);
+      await fixture.page.getByRole("button", {name: "Post comment"}).click();
+      await expect(composer).toHaveValue("");
+      const stored = await listThreadsOverApi(fixture, published.body.artifact.id);
+      expect(stored.map((thread) => thread.body)).toEqual(["Spaced body"]);
+      expect(sent.keys).toHaveLength(2);
+      expect(sent.keys[1]).toBe(sent.keys[0]);
+      expect(sent.bodies[1]).toBe(sent.bodies[0]);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
   test("DSP-004-B: the catalog comment total keeps its scope while sent comments leave the open count", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {
