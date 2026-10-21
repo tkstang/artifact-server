@@ -39,7 +39,13 @@ import {Dialog} from "@base-ui/react/dialog";
 import {Popover} from "@base-ui/react/popover";
 import {motion} from "motion/react";
 
-import {setDraftPrincipal, writeDraft} from "@/components/comments/comment-drafts";
+import {
+  readDraftAnchor,
+  setDraftPrincipal,
+  writeAnchoredDraft,
+  writeDraft,
+  type DraftContext,
+} from "@/components/comments/comment-drafts";
 import {useCommentPoll} from "@/components/comments/comment-poll";
 import {
   api,
@@ -62,6 +68,7 @@ import {
   sourceFreshnessLabel,
 } from "@/lib/presentation";
 import {useHorizontalOverflow} from "@/lib/use-horizontal-overflow";
+import {reviewAnchorSchema} from "@/review-frame/protocol";
 import {useMediaQuery} from "@/lib/use-media-query";
 import artifactServerAnimationUrl from "./assets/artifact-server.svg";
 import {ArtifactMark} from "./artifact-mark.tsx";
@@ -574,6 +581,9 @@ function ArtifactReview({
   const [htmlAnnotateModeActive, setHtmlAnnotateModeActive] = useState(true);
   const [homeOpen, setHomeOpen] = useState(false);
   const [previewRetryToken, setPreviewRetryToken] = useState(0);
+  // Remounts the comments panel so a draft restored from a failed
+  // in-document save appears in its composer.
+  const [restoredDraftGeneration, setRestoredDraftGeneration] = useState(0);
   const focusCommentsButtonRef = useRef<HTMLButtonElement>(null);
   const inspectorTabListRef = useRef<HTMLDivElement>(null);
   const focusControlsRestoreRef = useRef<HTMLButtonElement>(null);
@@ -655,7 +665,30 @@ function ArtifactReview({
       setInspectorOpen(false);
     }
   };
-  const inspectorComments = {...comments, selectThread: revealThreadInDocument};
+  const newThreadDraftContext: DraftContext | null = selectedArtifactId === null
+    ? null
+    : {
+      artifactId: selectedArtifactId,
+      principalId: session.principal.id,
+      threadId: null,
+      versionId: selectedVersionId,
+    };
+  // A new-thread draft restored from a failed in-document save still carries
+  // its anchor; posting it from the sidebar composer keeps that anchor.
+  const submitWithDraftAnchor: typeof comments.submit = (body, anchor, path) => {
+    const kept = anchor === null && newThreadDraftContext !== null
+      ? readDraftAnchor(newThreadDraftContext)
+      : null;
+    const keptAnchor = kept === null ? null : reviewAnchorSchema.safeParse(kept.anchor);
+    return keptAnchor?.success === true && kept !== null
+      ? comments.submit(body, keptAnchor.data, kept.path)
+      : comments.submit(body, anchor, path);
+  };
+  const inspectorComments = {
+    ...comments,
+    selectThread: revealThreadInDocument,
+    submit: submitWithDraftAnchor,
+  };
   const openCommentCount = comments.threads.filter(
     (thread) => thread.state === "open",
   ).length;
@@ -1765,6 +1798,7 @@ function ArtifactReview({
                   <ReviewCommentsInspector
                     canComment={canComment}
                     canDeleteAny={canDeleteAnyComment}
+                    key={restoredDraftGeneration}
                     principalId={session.principal.id}
                     ref={commentsInspectorRef}
                     session={inspectorComments}
@@ -1884,15 +1918,19 @@ function ArtifactReview({
                 }}
                 onSubmitAnnotation={async (body, anchor, path) => {
                   const saved = await comments.submit(body, anchor, path);
-                  if (!saved && selectedArtifactId !== null && selectedVersionId !== null) {
+                  if (!saved && newThreadDraftContext !== null && selectedVersionId !== null) {
                     // The in-frame composer discards its text on failure; keep
-                    // it as this version's new-thread draft instead.
-                    writeDraft({
-                      artifactId: selectedArtifactId,
-                      principalId: session.principal.id,
-                      threadId: null,
-                      versionId: selectedVersionId,
-                    }, body);
+                    // it, with its anchor, as this version's new-thread draft
+                    // and show it in the comments panel.
+                    if (anchor === null) {
+                      writeDraft(newThreadDraftContext, body);
+                    } else {
+                      writeAnchoredDraft(newThreadDraftContext, body, {anchor, path});
+                    }
+                    setRestoredDraftGeneration((current) => current + 1);
+                    setInspectorTab("comments");
+                    if (focusMode) setFocusCommentsOpen(true);
+                    else setInspectorOpen(true);
                   }
                   if (saved) {
                     setInspectorTab("comments");
@@ -2041,6 +2079,7 @@ function ArtifactReview({
               <ReviewCommentsInspector
                 canComment={canComment}
                 canDeleteAny={canDeleteAnyComment}
+                key={restoredDraftGeneration}
                 principalId={session.principal.id}
                 ref={commentsInspectorRef}
                 session={inspectorComments}

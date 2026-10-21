@@ -31,13 +31,27 @@ export function draftKey(context: DraftContext): string {
     + `:${context.threadId ?? "new"}:${context.versionId ?? "-"}`;
 }
 
+const draftAnchorSchema = z.object({anchor: z.json(), path: z.string()});
+
+/**
+ * Where a new-thread draft was anchored in the document. A failed
+ * in-document save keeps its anchor with the draft so a retry from the
+ * sidebar composer still posts an anchored comment.
+ */
+export type DraftAnchor = z.infer<typeof draftAnchorSchema>;
+
 const memory = new Map<string, string>();
+const anchors = new Map<string, DraftAnchor>();
 const mirrorTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-const storedDraftSchema = z.object({b: z.string(), t: z.number()});
+const storedDraftSchema = z.object({
+  a: draftAnchorSchema.optional(),
+  b: z.string(),
+  t: z.number(),
+});
 type StoredDraft = z.infer<typeof storedDraftSchema>;
 
-function readMirror(key: string): string | null {
+function readMirror(key: string): StoredDraft | null {
   try {
     const raw = window.localStorage.getItem(key);
     if (raw === null) return null;
@@ -46,18 +60,19 @@ function readMirror(key: string): string | null {
       window.localStorage.removeItem(key);
       return null;
     }
-    return parsed.data.b;
+    return parsed.data;
   } catch {
     return null;
   }
 }
 
 function writeMirror(key: string, body: string): void {
+  const anchor = anchors.get(key);
+  const stored: StoredDraft = anchor === undefined
+    ? {b: body, t: Date.now()}
+    : {a: anchor, b: body, t: Date.now()};
   try {
-    window.localStorage.setItem(
-      key,
-      JSON.stringify({b: body, t: Date.now()} satisfies StoredDraft),
-    );
+    window.localStorage.setItem(key, JSON.stringify(stored));
   } catch {
     // A full or unavailable store never interrupts composing.
   }
@@ -82,8 +97,28 @@ export function readDraft(context: DraftContext): string {
   const held = memory.get(key);
   if (held !== undefined) return held;
   const mirrored = readMirror(key);
-  if (mirrored !== null) memory.set(key, mirrored);
-  return mirrored ?? "";
+  if (mirrored === null) return "";
+  memory.set(key, mirrored.b);
+  if (mirrored.a !== undefined) anchors.set(key, mirrored.a);
+  return mirrored.b;
+}
+
+/** The anchor a new-thread draft keeps from a failed in-document save. */
+export function readDraftAnchor(context: DraftContext): DraftAnchor | null {
+  readDraft(context);
+  return anchors.get(draftKey(context)) ?? null;
+}
+
+/** Keep a failed in-document comment as this context's draft, with its anchor. */
+export function writeAnchoredDraft(
+  context: DraftContext,
+  body: string,
+  anchor: {readonly anchor: unknown; readonly path: string},
+): void {
+  if (body.trim() === "") return;
+  const parsed = draftAnchorSchema.safeParse(anchor);
+  if (parsed.success) anchors.set(draftKey(context), parsed.data);
+  writeDraft(context, body);
 }
 
 export function writeDraft(context: DraftContext, body: string): void {
@@ -105,6 +140,7 @@ export function writeDraft(context: DraftContext, body: string): void {
 export function clearDraft(context: DraftContext): void {
   const key = draftKey(context);
   memory.delete(key);
+  anchors.delete(key);
   removeMirror(key);
 }
 
@@ -139,6 +175,7 @@ function purgePrincipalDrafts(principalId: string): void {
   for (const key of memory.keys()) {
     if (key.startsWith(prefix)) {
       memory.delete(key);
+      anchors.delete(key);
       const timer = mirrorTimers.get(key);
       if (timer !== undefined) clearTimeout(timer);
       mirrorTimers.delete(key);

@@ -7,7 +7,7 @@ import {
   stopBrowserFixture,
   type BrowserFixture,
 } from "./browser-fixture.js";
-import {createThreadOverApi} from "./comment-api.js";
+import {createThreadOverApi, listThreadsOverApi} from "./comment-api.js";
 
 const reviewDocument = "<!doctype html><html lang=\"en\"><title>Shell fixture</title><main><h1 id=\"shell-target\">Shell preview content</h1><p>Body text for the shell fixture.</p></main></html>";
 
@@ -104,6 +104,44 @@ test.describe("Review shell", () => {
       await fixture.page.locator(".as-preview-footer").getByRole("button", {name: "Reload"}).click();
       const preview = fixture.page.frameLocator(".as-artifact-frame").frameLocator("iframe");
       await expect(preview.getByRole("heading", {name: "Shell preview content"})).toBeVisible();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("DRF-001-F: a failed in-document comment keeps its anchor when it is retried from the comments panel", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await localLogin(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      let failures = 0;
+      await fixture.page.route(/\/versions\/[^/]+\/comments\?/u, async (route) => {
+        if (route.request().method() !== "POST" || failures > 0) {
+          await route.continue();
+          return;
+        }
+        failures += 1;
+        await route.abort("connectionreset");
+      });
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const reviewFrame = fixture.page.frameLocator(".as-artifact-frame");
+      const preview = reviewFrame.frameLocator("iframe");
+      await preview.locator("#shell-target").hover();
+      await preview.locator("#shell-target").click();
+      await reviewFrame.getByPlaceholder("Add a comment...").fill("Name the owner of this heading.");
+      await reviewFrame.getByRole("button", {name: "Save"}).click();
+
+      const composer = fixture.page.getByLabel("Add a comment");
+      await expect(composer).toHaveValue("Name the owner of this heading.");
+      await fixture.page.getByRole("button", {name: "Post comment"}).click();
+      await expect(async () => {
+        const stored = await listThreadsOverApi(fixture, published.body.artifact.id);
+        expect(stored).toHaveLength(1);
+        expect(stored[0]?.path).toBe("index.html");
+        expect(stored[0]?.anchor).toMatchObject({originalText: "Shell preview content"});
+      }).toPass();
+      expect(failures).toBe(1);
     } finally {
       await stopBrowserFixture(fixture);
     }
