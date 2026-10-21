@@ -73,6 +73,20 @@ The marketing site (artifactserver.com) is not in scope.
   layers and new files over wholesale rewrites, and list the expected conflict areas
   in the PR.
 
+## Operator decision: Mermaid through Pele
+
+Replace the Markdown review's Mermaid runtime with Pele. Today the review uses `@mermaid-js/tiny` 12.1.0 (`apps/web/package.json`) through `review-frame/mermaid-runtime.ts`. Pele is at https://pele.run, published on npm as `pele`, and MIT-licensed; Obsidian uses it as its renderer. It outputs CSS-variable-themed SVG, so its theme can follow the new document design.
+
+Read https://pele.run/security and https://pele.run/api before you start.
+
+- Keep rendering inside the sandboxed content frame.
+- Never let diagram authors supply `options` or `config`.
+- Allow only Pele's default link and image schemes.
+- Show errors as text. No extra SVG sanitizer or worker is needed: Pele already escapes and filters untrusted diagrams, and the frame's sandbox stays in place.
+- Keep `.md-mermaid` and `MDN-*` conformance intact. Update `docs/markdown-review.md` to match.
+
+Do this as its own slice, so the dependency swap is easy to review.
+
 ## Constraints you must keep
 
 - Read `AGENTS.md`, `CONTRIBUTING.md` and `project/README.md` first, and follow
