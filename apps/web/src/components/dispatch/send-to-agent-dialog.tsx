@@ -11,7 +11,7 @@ import {
   maximumDispatchNoteCharacters,
 } from "@/components/dispatch/dispatch-limits";
 import type {DispatchFeedback} from "@/components/dispatch/dispatch-toast";
-import {PresenceGlyph, presenceRing} from "@/components/dispatch/presence-avatar";
+import {PresenceGlyph, presenceRing, type PresenceRing} from "@/components/dispatch/presence-avatar";
 import {Button} from "@/components/ui/button";
 import {
   Dialog,
@@ -231,6 +231,10 @@ export function SendToAgentControl({
     : oneAgentLabel === undefined
       ? label
       : oneAgentLabel(mainAgent.displayName);
+  // While sending is unavailable (agent status unknown after a failed
+  // check), no ring claims a live state: motion is only for live states.
+  const ringOf = (agent: AgentPresence): PresenceRing =>
+    unavailableReason === null ? presenceRing(agent) : "disconnected";
   const trimmedNote = note.trim();
   const noteTooLong = trimmedNote.length > maximumDispatchNoteCharacters;
   const connectedDialogAgents = dialogAgents.filter((agent) => agent.connected);
@@ -401,7 +405,7 @@ export function SendToAgentControl({
             <PresenceGlyph
               className="-my-1"
               kind={mainAgent.kind}
-              ring={presenceRing(mainAgent)}
+              ring={ringOf(mainAgent)}
             />
           )}
           <span className="min-w-0 truncate">
@@ -436,7 +440,7 @@ export function SendToAgentControl({
                     }}
                     type="button"
                   >
-                    <PresenceGlyph kind={agent.kind} ring={presenceRing(agent)} />
+                    <PresenceGlyph kind={agent.kind} ring={ringOf(agent)} />
                     <span className="min-w-0">
                       <strong className="block truncate text-sm">{agent.displayName}</strong>
                       <span className="block truncate text-xs text-muted-foreground">
@@ -513,7 +517,7 @@ export function SendToAgentControl({
                     <PresenceGlyph
                       className="mt-0.5"
                       kind={agent.kind}
-                      ring={presenceRing(agent)}
+                      ring={ringOf(agent)}
                     />
                     <span className="min-w-0">
                       <span className="block font-heading text-sm font-semibold">

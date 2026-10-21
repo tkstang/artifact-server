@@ -436,6 +436,9 @@ test.describe("Artifact Server Review comment cards", () => {
       await expect(page.getByText("Can't send until agent status is known.")).toBeVisible();
       await expect(sendAll).toBeDisabled();
       await expect(page.getByRole("button", {name: "builder — Idle"})).toHaveCount(0);
+      // PRS-006: with status unknown, the ring inside Send all claims no live state.
+      await expect(sendAll.locator("[data-presence-ring]")).toHaveAttribute("data-presence-ring", "disconnected");
+      await expect(sendAll.locator(".presence-ring")).toHaveCSS("animation-name", "none");
 
       await page.unroute(presenceRoute);
       await page.getByRole("button", {exact: true, name: "Reload"}).click();
