@@ -16,3 +16,12 @@ export function documentAnchorOf(thread: CommentThread): ReviewAnchor | null {
     || anchor.originalText.trim() !== "";
   return placeable ? anchor : null;
 }
+
+/** The passage an anchored comment is about, as the reader selected it. */
+export function quotedPassage(anchor: ReviewAnchor): string {
+  const text = anchor.originalText.trim()
+    || anchor.htmlAnchor?.text?.trim()
+    || anchor.markdownSource?.sourceText.trim()
+    || "";
+  return text.replaceAll(/\s+/gu, " ");
+}

@@ -123,6 +123,7 @@ async function createDispatchBatches(
  * split into ordered batches while one human click remains the initiating act.
  */
 export function SendToAgentControl({
+  agentGlyph = true,
   agents,
   buttonSize = "xs",
   buttonVariant = "outline",
@@ -137,10 +138,12 @@ export function SendToAgentControl({
   resolveBundle,
   unavailableReason = null,
 }: {
+  /** Whether the main button repeats the destination agent's avatar. */
+  readonly agentGlyph?: boolean;
   /** The polled presence list, or null while the surface is reading it. */
   readonly agents: readonly AgentPresence[] | null;
   readonly buttonSize?: "default" | "sm" | "xs";
-  readonly buttonVariant?: "default" | "outline" | "secondary";
+  readonly buttonVariant?: "default" | "ghost" | "outline" | "secondary";
   readonly feedback: DispatchFeedback;
   /** Label used before the first destination is chosen. */
   readonly label: string;
@@ -394,7 +397,7 @@ export function SendToAgentControl({
               aria-hidden
               className="size-3 animate-spin rounded-full border border-current border-t-transparent motion-reduce:animate-none"
             />
-          ) : mainAgent === null ? null : (
+          ) : mainAgent === null || !agentGlyph ? null : (
             <PresenceGlyph
               className="-my-1"
               kind={mainAgent.kind}

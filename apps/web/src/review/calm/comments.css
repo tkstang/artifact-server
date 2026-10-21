@@ -92,16 +92,84 @@
   font-weight: 600;
 }
 
-.as-comment-card > header span {
-  background: transparent;
-  color: var(--as-subtle);
+/* State pills: open is implied, so only resolved and send states show. */
+.as-comment-card > header > span[data-state="resolved"],
+.as-comment-card > header > [data-slot="badge"] {
+  background: var(--as-surface-raised);
+  border-radius: 999px;
+  flex: 0 0 auto;
   font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.1rem 0.5rem;
+}
+
+.as-comment-card > header > span[data-state="resolved"] {
+  color: var(--as-subtle);
+}
+
+/* Author: initials avatar, name, and an Agent tag for registered agents. */
+.as-comment-card > header .as-comment-author {
+  background: transparent;
+  color: var(--as-text);
+  font-size: inherit;
   padding: 0;
 }
 
-.as-comment-card > header span[data-state="resolved"] {
-  background: transparent;
+.as-comment-author {
+  align-items: center;
+  display: inline-flex;
+  flex: 1 1 auto;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.as-comment-card > header .as-comment-author__avatar,
+.as-comment-replies header .as-comment-author__avatar {
+  align-items: center;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  height: 1.5rem;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 1.5rem;
+}
+
+.as-comment-author strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.as-comment-card > header .as-comment-author__agent,
+.as-comment-replies header .as-comment-author__agent {
+  background: var(--as-iris-soft);
+  border-radius: 999px;
+  color: var(--as-iris);
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+}
+
+/* The passage an anchored comment is about, marked in the comment colour. */
+.as-comment-card__quote {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  border-left: 3px solid var(--as-annotation);
   color: var(--as-subtle);
+  display: -webkit-box;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0.35rem 0 0.15rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  padding: 0.1rem 0 0.1rem 0.6rem;
 }
 
 .as-comment-card__body {

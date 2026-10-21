@@ -20,7 +20,8 @@ import {
   type CommentThreadDetails,
   type CommentThreadQuery,
 } from "@/api/client";
-import {documentAnchorOf} from "@/components/comments/comment-anchor";
+import {documentAnchorOf, quotedPassage} from "@/components/comments/comment-anchor";
+import {CommentAuthor} from "@/components/comments/comment-author";
 import {CommentComposer} from "@/components/comments/comment-composer";
 import {useCommentDraft} from "@/components/comments/comment-drafts";
 import {maximumCommentBodyCharacters} from "@/components/comments/comment-limits";
@@ -679,6 +680,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
   const readFailed = session.loadError !== null && session.threads.length === 0;
   const sentReadFailed = sentError !== null && sentThreads.length === 0;
   const agentWork = agentWorkOf(sentThreads, dispatchByThread);
+  // Commenting keys are service principals too, so only a registered agent's
+  // name earns the Agent tag.
+  const agentNames = new Set(agents?.map((agent) => agent.displayName) ?? []);
   const openSentCount = sentThreads.filter((thread) => thread.state === "open").length;
   const now = Date.now();
 
@@ -856,21 +860,32 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
         {visibleThreads.map((thread) => {
           const sentDispatch = view === "sent" ? dispatchByThread.get(thread.id) : undefined;
           const replies = visibleReplies.get(thread.id) ?? [];
-          const anchored = documentAnchorOf(thread) !== null;
+          const anchor = documentAnchorOf(thread);
+          const anchored = anchor !== null;
+          const quote = anchor === null ? "" : quotedPassage(anchor);
           return (
             <li key={thread.id}>
               <article
                 aria-current={session.selectedThreadId === thread.id ? "true" : undefined}
                 className="as-comment-card"
                 data-selected={session.selectedThreadId === thread.id}
+                data-state={thread.state}
               >
                 <header>
-                  <strong>{thread.author.displayName}</strong>
-                  {sentDispatch === undefined
-                    ? <span data-state={thread.state}>{thread.state}</span>
-                    : <DispatchStateChip state={sentDispatch.state} />}
+                  <CommentAuthor
+                    displayName={thread.author.displayName}
+                    isAgent={agentNames.has(thread.author.displayName)}
+                  />
+                  {sentDispatch !== undefined
+                    ? <DispatchStateChip state={sentDispatch.state} />
+                    : thread.state === "resolved"
+                      ? <span data-state="resolved">Resolved</span>
+                      : null}
                 </header>
                 <div className="as-comment-card__body">
+                  {quote === "" ? null : (
+                    <blockquote className="as-comment-card__quote">{quote}</blockquote>
+                  )}
                   <p>{thread.body}</p>
                   <footer>
                     <div className="as-comment-card__meta">
@@ -902,9 +917,10 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                         <>
                           {canComment && thread.state === "open" ? (
                             <SendToAgentControl
+                              agentGlyph={false}
                               agents={agents}
                               buttonSize="xs"
-                              buttonVariant="outline"
+                              buttonVariant="ghost"
                               feedback={dispatchUndo.feedback}
                               label="Send…"
                               onSent={onSent}
@@ -953,6 +969,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                         <ReviewReply
                           canDeleteAny={canDeleteAny}
                           canMutate={canComment}
+                          isAgent={agentNames.has(reply.author.displayName)}
                           key={reply.id}
                           onDelete={session.deleteReply}
                           onUpdate={session.updateReply}
@@ -984,6 +1001,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
 function ReviewReply({
   canDeleteAny,
   canMutate,
+  isAgent,
   onDelete,
   onUpdate,
   principalId,
@@ -991,6 +1009,7 @@ function ReviewReply({
 }: {
   readonly canDeleteAny: boolean;
   readonly canMutate: boolean;
+  readonly isAgent: boolean;
   readonly onDelete: (reply: CommentReply) => Promise<void>;
   readonly onUpdate: (reply: CommentReply, body: string) => Promise<boolean>;
   readonly principalId: string;
@@ -1008,7 +1027,7 @@ function ReviewReply({
   return (
     <li>
       <header>
-        <strong>{reply.author.displayName}</strong>
+        <CommentAuthor displayName={reply.author.displayName} isAgent={isAgent} />
         <time dateTime={reply.updatedAt}>{formatTimestamp(reply.updatedAt)}</time>
       </header>
       {editing ? (

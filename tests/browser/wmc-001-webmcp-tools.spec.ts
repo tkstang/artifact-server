@@ -155,7 +155,9 @@ test.describe("WMC-001 WebMCP review tools", () => {
       expect(reopened.counts).toEqual({open: 2, resolved: 0});
       await expect(firstCard).toHaveCount(0);
       await page.getByRole("button", {name: "Open", exact: true}).click();
-      await expect(firstCard.locator("[data-state=\"open\"]")).toBeVisible();
+      // Open is implied on a card; it carries the state and offers Resolve.
+      await expect(firstCard).toHaveAttribute("data-state", "open");
+      await expect(firstCard.getByRole("button", {exact: true, name: "Resolve"})).toBeVisible();
 
       // A new comment through the tool lands in the UI list like any other.
       const commented = echoSchema.parse(await callTool(page, "artifact_server_comment", {
