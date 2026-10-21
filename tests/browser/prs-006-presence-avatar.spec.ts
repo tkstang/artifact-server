@@ -273,6 +273,21 @@ test.describe("PRS-006 presence avatar", () => {
         ],
         sessionStorageKeys: ["artifact-review-return-url"],
       });
+
+      // Settings → MCP confirms which agents are connected in words: the
+      // live agent first, the disconnected one with when it was last seen,
+      // each with its working directory.
+      const settings = await fixture.context.newPage();
+      await settings.goto(`${fixture.server.baseUrl}/review/settings/mcp`);
+      const connectedAgents = settings.getByRole("region", {name: "Connected agents"});
+      const agentRows = connectedAgents.getByRole("listitem");
+      await expect(agentRows).toHaveCount(2);
+      await expect(agentRows.nth(0)).toContainText("backup");
+      await expect(agentRows.nth(0).getByText("Connected", {exact: true})).toBeVisible();
+      await expect(agentRows.nth(0).getByText("/work/backup", {exact: true})).toBeVisible();
+      await expect(agentRows.nth(1)).toContainText("pres");
+      await expect(agentRows.nth(1).getByText(/^Not connected · last seen /u)).toBeVisible();
+      await settings.close();
     } finally {
       await stopPresenceFixture(fixture);
     }

@@ -118,8 +118,8 @@ export function SettingsProjects({
           title="No projects"
         />
       ) : (
-        <div className="overflow-x-auto border">
-          <table className="w-full min-w-2xl text-left text-sm">
+        <div className="as-settings-table border">
+          <table aria-label="Projects" className="w-full text-left text-sm">
             <thead className="border-b bg-muted/50 text-[0.8125rem] font-medium text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-semibold">Project</th>
@@ -131,7 +131,7 @@ export function SettingsProjects({
             <tbody>
               {orderedProjects.map((project) => (
                 <tr className="border-b last:border-b-0" key={project.id}>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4" data-cell="primary">
                     <a className="font-heading font-semibold hover:underline" href={projectSettingsHref(project.id)}>
                       {project.name}
                     </a>
@@ -139,15 +139,19 @@ export function SettingsProjects({
                       {project.id}
                     </code>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4" data-cell="meta">
                     <StatusBadge tone={project.archivedAt === null ? "primary" : "neutral"}>
                       {project.archivedAt === null ? "Active" : "Archived"}
                     </StatusBadge>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-muted-foreground">
+                  <td
+                    className="px-4 py-4 whitespace-nowrap text-muted-foreground"
+                    data-cell="meta"
+                    data-label="Created"
+                  >
                     {formatTimestamp(project.createdAt)}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4" data-cell="actions-row">
                     <div className="flex justify-end gap-2">
                       <ButtonLink
                         href={`/review?project=${encodeURIComponent(project.id)}`}
@@ -156,7 +160,7 @@ export function SettingsProjects({
                       >
                         Open artifacts
                       </ButtonLink>
-                      <ButtonLink href={projectSettingsHref(project.id)} size="sm">
+                      <ButtonLink href={projectSettingsHref(project.id)} size="sm" variant="outline">
                         Settings
                       </ButtonLink>
                     </div>

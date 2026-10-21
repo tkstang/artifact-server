@@ -151,8 +151,8 @@ export function MembersScreen() {
           />
         )
         : (
-          <div className="overflow-x-auto border">
-            <table className="w-full min-w-3xl text-left text-sm">
+          <div className="as-settings-table border">
+            <table aria-label="Members" className="w-full text-left text-sm">
               <thead className="border-b bg-muted/50 text-[0.8125rem] font-medium text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Member</th>
@@ -165,20 +165,24 @@ export function MembersScreen() {
               <tbody>
                 {members.map((member) => (
                   <tr className="border-b last:border-b-0" key={member.id}>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4" data-cell="primary">
                       <p className="font-heading font-semibold">{member.displayName}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{member.email}</p>
                     </td>
-                    <td className="px-4 py-4 capitalize">{member.role}</td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 capitalize" data-cell="meta">{member.role}</td>
+                    <td className="px-4 py-4" data-cell="meta">
                       <StatusBadge tone={member.status === "active" ? "primary" : "neutral"}>
                         {member.status}
                       </StatusBadge>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-muted-foreground">
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-muted-foreground"
+                      data-cell="meta"
+                      data-label="Admitted"
+                    >
                       {formatTimestamp(member.createdAt)}
                     </td>
-                    <td className="px-4 py-4 text-right">
+                    <td className="px-4 py-4 text-right" data-cell="actions">
                       {member.status === "inactive"
                         ? null
                         : (

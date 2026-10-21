@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from "react";
 
 import {PageHeader} from "@/components/product";
 import {Button, ButtonLink} from "@/components/ui/button";
+import {ConnectedAgents} from "./settings-agents.tsx";
 import {
   manualCopyMessage,
   selectForManualCopy,
@@ -55,8 +56,10 @@ export function McpScreen({administrator}: {readonly administrator: boolean}) {
         title="Connect agents with MCP"
       />
 
+      <ConnectedAgents />
+
       {failure === null ? null : (
-        <p className="border border-destructive px-4 py-3 text-sm text-destructive" role="alert">
+        <p className="as-settings-notice px-4 py-3 text-sm" data-tone="danger" role="alert">
           {failure}
         </p>
       )}
@@ -184,9 +187,9 @@ function CopyableValue({
   readonly valueRef: (element: HTMLElement | null) => void;
 }) {
   return (
-    <div className="flex min-w-0 items-stretch border bg-muted/30">
+    <div className="as-settings-copyable flex min-w-0 items-stretch border bg-muted/30">
       <code
-        className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5 text-xs leading-5 whitespace-nowrap"
+        className="min-w-0 flex-1 px-3 py-2.5 text-xs leading-5 break-all"
         ref={valueRef}
       >
         {value}
