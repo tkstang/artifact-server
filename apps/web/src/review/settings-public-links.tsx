@@ -319,7 +319,7 @@ export function PublicLinksScreen() {
           <>
             <section
               aria-label="Bulk selection"
-              className="flex flex-col gap-3 border p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
             >
               <div className="flex flex-wrap gap-2">
                 <Button

@@ -288,6 +288,7 @@
  * the active destination is always visible on a phone.
  */
 .as-settings__content :is(section, article, div).border,
+.as-public-links-inventory,
 .as-settings-agents {
   background: var(--as-surface);
   border-color: var(--as-border);
