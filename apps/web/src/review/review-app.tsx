@@ -27,6 +27,7 @@ import {
   LayoutLeftIcon,
   Link01Icon,
   Moon02Icon,
+  MoreHorizontalIcon,
   PanelRightIcon,
   RefreshIcon,
   Search01Icon,
@@ -36,6 +37,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {Dialog} from "@base-ui/react/dialog";
+import {Menu} from "@base-ui/react/menu";
 import {Popover} from "@base-ui/react/popover";
 import {motion} from "motion/react";
 
@@ -63,6 +65,7 @@ import {
 import {
   actionLabel,
   formatBytes,
+  formatRelativeTime,
   formatTimestamp,
   sourceDriftDescription,
   sourceFreshnessLabel,
@@ -1379,6 +1382,17 @@ function ArtifactReview({
     window.addEventListener("keydown", revealFocusControls);
     return () => window.removeEventListener("keydown", revealFocusControls);
   }, [focusMode]);
+  const artifactTitle = details?.artifact.name ?? selectedItem?.artifact.name ?? null;
+  const versionIdentity = selectedVersion === null || details === null
+    ? null
+    : {
+      label: versionLabel(
+        selectedVersion.version.number,
+        versions.length,
+        selectedVersion.version.id === details.artifact.currentVersionId,
+      ),
+      savedAt: selectedVersion.version.createdAt,
+    };
   const returnHome = (event: ReactMouseEvent<HTMLAnchorElement>): void => {
     if (
       event.button !== 0
@@ -1730,20 +1744,19 @@ function ArtifactReview({
                   inert={focusControlsCollapsed}
                   role="toolbar"
                 >
+                  <span className="as-focus-controls__identity">
+                    <strong title={artifactTitle ?? undefined}>{artifactTitle ?? "Artifact"}</strong>
+                    {versionIdentity === null ? null : (
+                      <span className="as-version-chip">{versionIdentity.label}</span>
+                    )}
+                  </span>
                   {(previewKind === "html" || previewKind === "markdown") && canComment ? (
-                    <button
-                      aria-pressed={htmlAnnotateModeActive}
+                    <AnnotateModeToggle
+                      active={htmlAnnotateModeActive}
                       className="as-button as-focus-controls__button"
-                      data-active={htmlAnnotateModeActive}
-                      onClick={() => setHtmlAnnotateModeActive((active) => !active)}
-                      title={htmlAnnotateModeActive
-                        ? "Annotate mode: click an element or select text to comment. Press Escape to interact."
-                        : "Interact mode: links and controls work normally. Select text or turn annotation mode back on to comment."}
-                      type="button"
-                    >
-                      <HugeiconsIcon aria-hidden="true" icon={Edit02Icon} strokeWidth={1.8} />
-                      {htmlAnnotateModeActive ? "Annotate mode" : "Interact mode"}
-                    </button>
+                      compactName
+                      onToggle={() => setHtmlAnnotateModeActive((active) => !active)}
+                    />
                   ) : null}
                   <button
                     aria-controls="review-focus-comments"
@@ -1861,32 +1874,30 @@ function ArtifactReview({
                   <HugeiconsIcon icon={LayoutLeftIcon} strokeWidth={1.8} />
                 </IconButton>
               ) : null}
-              <h1>{details?.artifact.name ?? selectedItem?.artifact.name ?? "Artifact Server"}</h1>
+              <div className="as-preview-header__title">
+                <h1 title={artifactTitle ?? undefined}>{artifactTitle ?? "Artifact Server"}</h1>
+                {versionIdentity === null ? null : (
+                  <span className="as-preview-header__meta">
+                    <span className="as-version-chip">{versionIdentity.label}</span>
+                    <time
+                      className="as-preview-header__saved"
+                      dateTime={versionIdentity.savedAt}
+                      title={`Saved ${formatTimestamp(versionIdentity.savedAt)}`}
+                    >
+                      Saved {formatRelativeTime(versionIdentity.savedAt, Date.now())}
+                    </time>
+                  </span>
+                )}
+              </div>
             </div>
             <div className="as-preview-header__actions">
               {(previewKind === "html" || previewKind === "markdown") && canComment ? (
-                <IconButton
+                <AnnotateModeToggle
                   active={htmlAnnotateModeActive}
-                  label={htmlAnnotateModeActive
-                    ? "Annotate mode: click an element or select text to comment. Press Escape to interact."
-                    : "Interact mode: links and controls work normally. Select text or turn annotation mode back on to comment."}
-                  onClick={() => setHtmlAnnotateModeActive((active) => !active)}
-                >
-                  <HugeiconsIcon icon={Edit02Icon} strokeWidth={1.8} />
-                </IconButton>
+                  className="as-button as-annotate-toggle"
+                  onToggle={() => setHtmlAnnotateModeActive((active) => !active)}
+                />
               ) : null}
-              <button
-                aria-label={opening ? "Opening raw artifact" : "Open raw artifact"}
-                className="as-button as-button--secondary as-preview-header__raw"
-                disabled={selectedVersionId === null || opening}
-                onClick={() => void openRawArtifact()}
-                type="button"
-              >
-                <HugeiconsIcon aria-hidden="true" icon={ExternalLinkIcon} strokeWidth={1.8} />
-                <span className="as-button__label">
-                  {opening ? "Opening…" : "Open raw artifact"}
-                </span>
-              </button>
               <ReviewShareControl
                 details={details}
                 key={`header-share-${details?.artifact.id ?? "empty"}`}
@@ -1895,22 +1906,23 @@ function ArtifactReview({
                 selectedVersion={selectedVersion}
                 triggerClassName="as-button as-button--secondary"
               />
-              <ReviewDownloadControl
-                className="as-button as-button--secondary"
-                download={download}
-              />
               <button
                 aria-label="Full screen"
                 aria-keyshortcuts="F"
-                className="as-button as-button--primary"
+                className="as-icon-button as-preview-header__full-screen"
                 disabled={selectedVersionId === null}
                 onClick={enterFocusMode}
                 title="Full screen (F)"
                 type="button"
               >
                 <HugeiconsIcon aria-hidden="true" icon={FullScreenIcon} strokeWidth={1.8} />
-                <span className="as-button__label">Full screen</span>
               </button>
+              <ReviewMoreActions
+                download={download}
+                onOpenRawArtifact={() => void openRawArtifact()}
+                opening={opening}
+                rawDisabled={selectedVersionId === null}
+              />
               {!inspectorOpen ? (
                 <IconButton
                   keyShortcuts="]"
@@ -1999,31 +2011,36 @@ function ArtifactReview({
               <IconButton
                 disabled={selectedIndex <= 0}
                 keyShortcuts="K ArrowUp"
-                label="Previous artifact"
+                label={selectedIndex <= 0
+                  ? "Previous artifact"
+                  : `Previous artifact (${selectedIndex} of ${catalogItems.length})`}
                 onClick={() => {
                   const previous = catalogItems[selectedIndex - 1];
                   if (previous !== undefined) {
                     selectArtifact(previous.artifact.id, previous.artifact.currentVersionId);
                   }
                 }}
-                title="Previous artifact (K or ↑)"
+                title={selectedIndex <= 0
+                  ? "Previous artifact (K or ↑)"
+                  : `Previous artifact, ${selectedIndex} of ${catalogItems.length} (K or ↑)`}
               >
                 <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={1.8} />
               </IconButton>
-              <span className="as-tabular">
-                {selectedIndex < 0 ? "0" : selectedIndex + 1} / {catalogItems.length}
-              </span>
               <IconButton
                 disabled={selectedIndex < 0 || selectedIndex >= catalogItems.length - 1}
                 keyShortcuts="J ArrowDown"
-                label="Next artifact"
+                label={selectedIndex < 0 || selectedIndex >= catalogItems.length - 1
+                  ? "Next artifact"
+                  : `Next artifact (${selectedIndex + 2} of ${catalogItems.length})`}
                 onClick={() => {
                   const next = catalogItems[selectedIndex + 1];
                   if (next !== undefined) {
                     selectArtifact(next.artifact.id, next.artifact.currentVersionId);
                   }
                 }}
-                title="Next artifact (J or ↓)"
+                title={selectedIndex < 0 || selectedIndex >= catalogItems.length - 1
+                  ? "Next artifact (J or ↓)"
+                  : `Next artifact, ${selectedIndex + 2} of ${catalogItems.length} (J or ↓)`}
               >
                 <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={1.8} />
               </IconButton>
@@ -2032,7 +2049,7 @@ function ArtifactReview({
               <span className="as-preview-footer__metadata">
                 {selectedVersion === null
                   ? "No version selected"
-                  : `${selectedVersion.manifest.entries.length} file${selectedVersion.manifest.entries.length === 1 ? "" : "s"} · ${selectedVersion.version.routingMode.toUpperCase()}`}
+                  : `Version ${selectedVersion.version.number} of ${Math.max(versions.length, selectedVersion.version.number)} · ${selectedVersion.manifest.entries.length} file${selectedVersion.manifest.entries.length === 1 ? "" : "s"}`}
               </span>
               <button
                 className="as-button as-preview-footer__reload"
@@ -2240,6 +2257,105 @@ function ReviewDownloadControl({
       <HugeiconsIcon aria-hidden="true" icon={Download04Icon} strokeWidth={1.8} />
       <span className="as-button__label">Download</span>
     </a>
+  );
+}
+
+const annotateModeDescription = "Annotate mode: click an element or select text to comment. Press Escape to interact.";
+const interactModeDescription = "Interact mode: links and controls work normally. Select text or turn annotation mode back on to comment.";
+
+/**
+ * Switch between commenting on the document and using it. The visible label
+ * says what the reader is doing; the accessible name keeps the mode's name.
+ */
+function AnnotateModeToggle({
+  active,
+  className,
+  compactName = false,
+  onToggle,
+}: {
+  readonly active: boolean;
+  readonly className: string;
+  /** Name the toggle by its mode alone (the focus toolbar); otherwise with its description. */
+  readonly compactName?: boolean;
+  readonly onToggle: () => void;
+}) {
+  const description = active ? annotateModeDescription : interactModeDescription;
+  return (
+    <button
+      aria-label={compactName ? (active ? "Annotate mode" : "Interact mode") : description}
+      aria-pressed={active}
+      className={className}
+      data-active={active}
+      onClick={onToggle}
+      title={description}
+      type="button"
+    >
+      <HugeiconsIcon aria-hidden="true" icon={Edit02Icon} strokeWidth={1.8} />
+      <span className="as-button__label">{active ? "Commenting" : "Reading"}</span>
+    </button>
+  );
+}
+
+/** Secondary document actions that do not need a permanent place in the header. */
+function ReviewMoreActions({
+  download,
+  onOpenRawArtifact,
+  opening,
+  rawDisabled,
+}: {
+  readonly download: ReviewDownload | null;
+  readonly onOpenRawArtifact: () => void;
+  readonly opening: boolean;
+  readonly rawDisabled: boolean;
+}) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        render={(
+          <button
+            aria-label="More actions"
+            className="as-icon-button"
+            title="More actions"
+            type="button"
+          />
+        )}
+      >
+        <HugeiconsIcon aria-hidden="true" icon={MoreHorizontalIcon} strokeWidth={1.8} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="end" className="as-more-actions__positioner" sideOffset={6}>
+          <Menu.Popup className="as-more-actions">
+            <Menu.Item
+              className="as-more-actions__item"
+              disabled={rawDisabled || opening}
+              label="Open raw artifact"
+              onClick={onOpenRawArtifact}
+            >
+              <HugeiconsIcon aria-hidden="true" icon={ExternalLinkIcon} strokeWidth={1.8} />
+              {opening ? "Opening…" : "Open raw artifact"}
+            </Menu.Item>
+            {download === null ? (
+              <Menu.Item className="as-more-actions__item" disabled label="Download">
+                <HugeiconsIcon aria-hidden="true" icon={Download04Icon} strokeWidth={1.8} />
+                Download
+              </Menu.Item>
+            ) : (
+              <Menu.LinkItem
+                className="as-more-actions__item"
+                closeOnClick
+                download
+                href={download.href}
+                label="Download"
+                title={download.title}
+              >
+                <HugeiconsIcon aria-hidden="true" icon={Download04Icon} strokeWidth={1.8} />
+                Download
+              </Menu.LinkItem>
+            )}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 

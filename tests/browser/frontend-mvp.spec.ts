@@ -39,6 +39,12 @@ const reviewWebpBase64 = "UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v
 const reviewGifBase64 = "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 const reviewWebmBase64 = "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAK0EU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggElTbuMU6uEHFO7a1OsggKe7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjIuMTIuMTAxV0GNTGF2ZjYyLjEyLjEwMUSJiEB5AAAAAAAAFlSua8iuAQAAAAAAAD/XgQFzxYj918nP8i2d+ZyBACK1nIN1bmSIgQCGhVZfVlA5g4EBI+ODhAJiWgDgkLCBILqBGJqBAlWwhFW5gQESVMNnQIBzc6BjwIBnyJpFo4dFTkNPREVSRIeNTGF2ZjYyLjEyLjEwMXNz2mPAi2PFiP3Xyc/yLZ35Z8ilRaOHRU5DT0RFUkSHmExhdmM2Mi4yOC4xMDEgbGlidnB4LXZwOWfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDAuNDAwMDAwMDAwAB9DtnVA7eeBAKOrgQAAgIJJg0IAAfABdgA4JBwYSgAAMGAAABDf//Xtp/////2Ecf//+rwAAKOTgQAoAIYAQJKcAFAAAAMgAABDQKOTgQBQAIYAQJKcAE7gAAMgAABDQKOTgQB4AIYAQJKcAFAAAAMgAABDQKOTgQCgAIYAQJKcAE1AAAMgAABDQKOTgQDIAIYAQJKcAFAAAAMgAABDQKOTgQDwAIYAQJKcAE7gAAMgAABDQKOTgQEYAIYAQJKcAFAAAAMgAABDQKOTgQFAAIYAQJKcAEogAAMgAABDQKOTgQFoAIYAQJKcAFAAAAMgAABDQBxTu2uRu4+zgQC3iveBAfGCAavwgQM=";
 
+/** The header keeps Open raw artifact in its More actions menu. */
+async function openRawArtifactFromMenu(fixture: BrowserFixture): Promise<void> {
+  await fixture.page.getByRole("button", {name: "More actions"}).click();
+  await fixture.page.getByRole("menuitem", {name: "Open raw artifact"}).click();
+}
+
 test.describe("Artifact Server frontend MVP", () => {
   test("CMT-015-B CMT-015-F: the Artifact Server review application navigates projects and artifacts", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
@@ -863,7 +869,9 @@ test.describe("Artifact Server frontend MVP", () => {
         })}`,
       );
 
-      const standardDownload = fixture.page.getByRole("link", {
+      // The header keeps Download in its More actions menu.
+      await fixture.page.getByRole("button", {name: "More actions"}).click();
+      const standardDownload = fixture.page.getByRole("menuitem", {
         exact: true,
         name: "Download",
       });
@@ -1366,7 +1374,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.getByRole("button", {name: /Public fixture/u}).click();
       const [publicPage] = await Promise.all([
         fixture.context.waitForEvent("page"),
-        fixture.page.getByRole("button", {name: "Open raw artifact"}).click(),
+        openRawArtifactFromMenu(fixture),
       ]);
       await expect(publicPage.locator("body")).toContainText("public browser content");
       await publicPage.close();
@@ -1374,7 +1382,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.getByRole("button", {name: /Private fixture/u}).click();
       const [privatePage] = await Promise.all([
         fixture.context.waitForEvent("page"),
-        fixture.page.getByRole("button", {name: "Open raw artifact"}).click(),
+        openRawArtifactFromMenu(fixture),
       ]);
       await expect(privatePage.locator("body")).toContainText("private browser content");
       await privatePage.close();

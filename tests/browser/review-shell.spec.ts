@@ -1,7 +1,7 @@
 import {expect, test} from "@playwright/test";
 
 import {ApiClient, issueApiKey, signInAdministrator} from "../support/agent-dispatch.js";
-import {publishNew} from "../support/publishing.js";
+import {publishNew, publishVersion} from "../support/publishing.js";
 import {
   localLogin,
   startBrowserFixture,
@@ -244,6 +244,34 @@ test.describe("Review shell", () => {
       await expect(fixture.page.getByRole("button", {name: "Close inspector"})).toBeFocused();
       await fixture.page.keyboard.press("Tab");
       await expect(fixture.page.getByRole("tabpanel")).toBeFocused();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("CMT-015-B: the header and the focus bar name the exact artifact and version", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await publishVersion(fixture.server, fixture.installation, {
+        artifactId: published.body.artifact.id,
+        content: reviewDocument,
+        expectedCurrentVersionId: published.body.version.id,
+        idempotencyKey: "review-shell-identity-v2",
+      });
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await localLogin(fixture);
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const header = fixture.page.locator(".as-preview-header");
+      await expect(header.getByRole("heading", {name: "Shell fixture"})).toBeVisible();
+      await expect(header.getByText("Version 1 of 2", {exact: true})).toBeVisible();
+      await expect(fixture.page.locator(".as-preview-footer")).toContainText("Version 1 of 2 · 1 file");
+
+      await fixture.page.getByRole("button", {name: "Full screen"}).click();
+      const focusBar = fixture.page.getByRole("toolbar", {name: "Artifact viewer controls"});
+      await expect(focusBar.getByText("Shell fixture", {exact: true})).toBeVisible();
+      await expect(focusBar.getByText("Version 1 of 2", {exact: true})).toBeVisible();
+      await expect(focusBar.getByRole("button", {name: "Exit full screen"})).toBeVisible();
     } finally {
       await stopBrowserFixture(fixture);
     }
