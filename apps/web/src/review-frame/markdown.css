@@ -110,10 +110,26 @@ hr { border: 0; border-top: 1px solid var(--md-line); margin-block: 32px; }
   th, td { padding: 10px 12px; }
 }
 @media (min-width: 1100px) { .md-layout { padding-block: 64px 112px; } }
-.md-mermaid { margin: 26px 0; overflow-x: auto; }
-.md-mermaid > svg { display: block; width: 100%; height: auto;  margin-inline: auto; pointer-events: none; }
+.md-mermaid {
+  margin: 26px 0; overflow-x: auto;
+  --pele-bg: var(--md-paper); --pele-fg: var(--md-ink); --pele-muted: var(--md-soft-ink);
+  --pele-line: #a7adb6; --pele-surface: #2e3239; --pele-surface-alt: var(--md-wash);
+  --pele-border: #666c75; --pele-accent: var(--md-link); --pele-critical: #ff9b92; --pele-error: #ff9b92;
+  --pele-radius: 6px; --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --pele-series-1: #8fb3e0; --pele-series-2: #f2ae6b; --pele-series-3: #8cc788; --pele-series-4: #f09a98;
+  --pele-series-5: #94cdc8; --pele-series-6: #ecd27a; --pele-series-7: #cfa4c6; --pele-series-8: #c8a58e;
+}
+:root.light .md-mermaid {
+  --pele-line: #75736d; --pele-surface: var(--md-wash); --pele-surface-alt: #e9eef2;
+  --pele-border: #c8c4ba; --pele-critical: #b42318; --pele-error: #b42318;
+  --pele-series-1: #2f5f8f; --pele-series-2: #a8541a; --pele-series-3: #3f6b49; --pele-series-4: #a8322f;
+  --pele-series-5: #2f6d68; --pele-series-6: #7a5d12; --pele-series-7: #7f4f75; --pele-series-8: #6e4f3b;
+}
+/* Pele sizes the SVG to the figure; links stay usable, the rest is quoted text. */
+.md-mermaid > svg { display: block; margin-inline: auto; pointer-events: none; }
+.md-mermaid > svg a { pointer-events: auto; cursor: pointer; }
+.md-mermaid > svg a text { fill: var(--md-link); text-decoration: underline; }
 .md-mermaid > details { margin-top: 12px; color: var(--md-soft-ink); font-size: 12px; }
 .md-mermaid summary { cursor: pointer; width: fit-content; }
 .md-diagram-status { font-size: 13px; color: var(--md-soft-ink); }
-.md-diagram-scratch { position: absolute; left: -10000px; top: 0; width: 740px; visibility: hidden; }
-.md-mermaid svg * { filter: none; }
+.md-diagram-error { color: var(--md-soft-ink); }

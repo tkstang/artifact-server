@@ -112,8 +112,8 @@ export async function renderMarkdown(
   parser.renderer.rules["table_close"] = (tableTokens, index, options, _env, renderer) => `${renderer.renderToken(tableTokens, index, options)}</div>`;
   const hasMermaid = tokens.some((token) => token.type === "fence" && token.info.trim() === "mermaid");
   // Trusted, self-contained runtime executes only in the viewer's opaque sandbox.
-  const mermaidBundle = hasMermaid ? (await import("@mermaid-js/tiny/dist/mermaid.tiny.js?raw")).default : "";
-  const diagramScript = hasMermaid ? `<script>${mermaidBundle.replace(/<\/script/giu, "<\\/script")}\n(${runMermaid.toString()})();</script>` : "";
+  const peleBundle = hasMermaid ? (await import("pele/global?raw")).default : "";
+  const diagramScript = hasMermaid ? `<script>${peleBundle.replace(/<\/script/giu, "<\\/script")}\n(${runMermaid.toString()})();</script>` : "";
   // The outline is viewer navigation, not document content. Pointer events
   // inside it stop before the annotation bridge sees them, so Contents and
   // its links work in annotate mode (the default).

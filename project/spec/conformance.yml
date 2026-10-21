@@ -4915,7 +4915,7 @@ requirements:
     source: {file: markdown-review-spec.md, anchor: conformance-requirements}
     acceptance:
       behavior: {id: MDN-003-B, description: "Render a real Mermaid diagram, switch host theme, create diagram feedback, and retrieve its exact fence source, section, version and path after revision."}
-      failure: {id: MDN-003-F, description: "Invalid syntax and malicious link/HTML directives remain source fallback, with no active SVG content or external request; the opaque sandbox and original source remain intact."}
+      failure: {id: MDN-003-F, description: "Invalid syntax, author diagram settings and image loads remain source fallback; malicious link/HTML directives are dropped by the renderer; no active SVG content or external request; the opaque sandbox and original source remain intact."}
     deployments: *all
     status: behavior_verified
     depends_on: [MDN-001, MDN-002, CMT-014]
@@ -4925,3 +4925,8 @@ requirements:
         result: pass
         run: project/evidence/markdown-review/browser.json
         recorded_at: "2026-10-04T03:11:57.313000+00:00"
+      - deployment: local
+        tests: [MDN-003-B, MDN-003-F]
+        result: pass
+        run: project/evidence/browser.json
+        recorded_at: "2026-10-21T14:20:34.023Z"

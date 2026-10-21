@@ -205,9 +205,6 @@ importers:
       '@hugeicons/react':
         specifier: 1.1.9
         version: 1.1.9(react@19.2.8)
-      '@mermaid-js/tiny':
-        specifier: 12.1.0
-        version: 12.1.0
       '@plannotator/ui':
         specifier: 0.31.0
         version: 0.31.0(@codemirror/lang-css@6.3.1)(@codemirror/lang-html@6.4.12)(@lezer/markdown@1.7.2)(@shikijs/themes@4.4.3)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)(typescript@6.0.3)
@@ -226,6 +223,9 @@ importers:
       motion:
         specifier: 12.43.0
         version: 12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      pele:
+        specifier: 1.8.0
+        version: 1.8.0
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -2189,10 +2189,6 @@ packages:
 
   '@mermaid-js/parser@1.2.0':
     resolution: {integrity: sha512-oYPyv8A4As1yH5Bx+04iQEQxXuIQDe0GKCNSRgao6z8AM9jixXIfP0vsppRLvGf+nKIOb9/LdpWA4YuJiVvESA==}
-
-  '@mermaid-js/tiny@12.1.0':
-    resolution: {integrity: sha512-z/N9vnXv+5Ffcdj19viXxPhSy7Jt5y4vtS+Aa9iZVGIo2U0KKNgO2U+xm8plHh3y5eUVkschMCXfc/DIz8A6uQ==}
-    engines: {node: '>=22.12.0'}
 
   '@modelcontextprotocol/client@2.0.0':
     resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
@@ -6478,6 +6474,10 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
+  pele@1.8.0:
+    resolution: {integrity: sha512-AYmHttE70cwNJVXdfPMCANGivFlmc3bGGpMG0GqH5S5vE3RgtEuLlkqbhRfe94Csv/ZEd1TUbv2dMUHpw4p1Bg==}
+    engines: {node: '>=20'}
+
   pend@1.2.0:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
 
@@ -10099,8 +10099,6 @@ snapshots:
   '@mermaid-js/parser@1.2.0':
     dependencies:
       '@chevrotain/types': 11.1.2
-
-  '@mermaid-js/tiny@12.1.0': {}
 
   '@modelcontextprotocol/client@2.0.0':
     dependencies:
@@ -14806,6 +14804,8 @@ snapshots:
   path-to-regexp@8.4.2: {}
 
   pathe@2.0.3: {}
+
+  pele@1.8.0: {}
 
   pend@1.2.0: {}
 

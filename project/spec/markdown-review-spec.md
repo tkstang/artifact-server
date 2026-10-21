@@ -19,8 +19,9 @@ See [design and limits](../../docs/markdown-review.md).
 
 - **MDN-003**: Mermaid fences render static, theme-aware diagrams inside the same
   opaque viewer, with diagram block source/version/path available on comments.
-  Invalid syntax, authored active content/configuration/resource requests produce
-  readable source fallback without breaking the document. V1 source and diagram
+  Invalid syntax, authored configuration and resource requests produce readable
+  source fallback without breaking the document; authored active content (script
+  links, HTML labels) is dropped by the renderer and never runs. V1 source and diagram
   feedback remain available after v2 publication.
 
 Source positions are block bounds, not exact character spans. Original quote and
