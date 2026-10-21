@@ -55,10 +55,25 @@ test.describe("Review shell", () => {
   test("CMT-015-F: Show in page steps an overlaying inspector aside so the anchor is visible", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {
-      const published = await publishShellFixture(fixture);
+      // The anchored paragraph starts well below the fold of the preview.
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><title>Long fixture</title><main><h1>Long document</h1><div style=\"height: 3000px\"></div><p id=\"late-target\">The late paragraph.</p></main></html>",
+        idempotencyKey: "review-shell-show-in-page-document",
+        name: "Long fixture",
+      });
       await createThreadOverApi(fixture, {
+        anchor: {
+          htmlAnchor: {
+            point: {x: 0.5, y: 0.5},
+            selector: "#late-target",
+            tagName: "P",
+            text: "The late paragraph.",
+          },
+          originalText: "The late paragraph.",
+        },
         artifactId: published.body.artifact.id,
-        body: "Check the heading.",
+        body: "Check the late paragraph.",
         idempotencyKey: "review-shell-show-in-page",
         path: "index.html",
         versionId: published.body.version.id,
@@ -66,6 +81,8 @@ test.describe("Review shell", () => {
       await localLogin(fixture);
       const inspector = fixture.page.getByRole("complementary", {name: "Artifact inspector"});
       const showInPage = fixture.page.getByRole("button", {name: "Show in page"});
+      const target = fixture.page.frameLocator(".as-artifact-frame").frameLocator("iframe")
+        .locator("#late-target");
 
       // Docked beside the artifact, the inspector stays open.
       await fixture.page.setViewportSize({height: 800, width: 1440});
@@ -74,11 +91,17 @@ test.describe("Review shell", () => {
       await showInPage.click();
       await expect(inspector).toBeVisible();
 
-      // Overlaying the artifact, it steps aside.
+      // Overlaying the artifact, it steps aside and the anchor scrolls into view.
       await fixture.page.setViewportSize({height: 768, width: 1024});
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id));
+      await fixture.page.getByRole("button", {name: "Open inspector"}).click();
+      await fixture.page.getByRole("tab", {name: /^Comments/u}).click();
+      await expect(target).toBeAttached();
+      await expect(target).not.toBeInViewport();
       await showInPage.click();
       await expect(inspector).toBeHidden();
       await expect(fixture.page.getByRole("button", {name: "Open inspector"})).toBeVisible();
+      await expect(target).toBeInViewport();
     } finally {
       await stopBrowserFixture(fixture);
     }
