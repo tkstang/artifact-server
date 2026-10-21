@@ -82,11 +82,17 @@ body {
   color: var(--as-text);
 }
 
-button,
-input,
-select {
-  color: inherit;
-  font: inherit;
+/*
+ * Layered so utility classes (shadcn buttons' text colour and weight) win
+ * over this reset; unlayered it beat them and left primary labels near-black.
+ */
+@layer base {
+  button,
+  input,
+  select {
+    color: inherit;
+    font: inherit;
+  }
 }
 
 button,

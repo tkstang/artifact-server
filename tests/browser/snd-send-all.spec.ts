@@ -1,3 +1,4 @@
+import {AxeBuilder} from "@axe-core/playwright";
 import {expect, test, type Browser} from "@playwright/test";
 
 import {
@@ -123,6 +124,16 @@ test.describe("Review send-all", () => {
         name: "Send all open (101) to builder",
       })).toBeVisible();
       await expect(page.locator(".as-comment-card")).toHaveCount(101);
+      // The primary action stays readable in both themes: its label keeps the
+      // button's own foreground instead of inheriting the page ink.
+      const sendAllContrast = () => new AxeBuilder({page})
+        .include(".as-comments__send-all")
+        .withRules(["color-contrast"])
+        .analyze();
+      expect((await sendAllContrast()).violations).toEqual([]);
+      await page.getByRole("button", {name: /^Use (?:light|dark) theme$/u}).click();
+      expect((await sendAllContrast()).violations).toEqual([]);
+      await page.getByRole("button", {name: /^Use (?:light|dark) theme$/u}).click();
       const preview = page.frameLocator(".as-artifact-frame")
         .frameLocator("iframe");
       await expect(preview.locator("button[data-plannotator-marker]")).toHaveCount(1);
