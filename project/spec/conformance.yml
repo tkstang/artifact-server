@@ -4929,4 +4929,4 @@ requirements:
         tests: [MDN-003-B, MDN-003-F]
         result: pass
         run: project/evidence/browser.json
-        recorded_at: "2026-10-21T14:20:34.023Z"
+        recorded_at: "2026-10-21T14:40:11.175Z"
