@@ -10,6 +10,10 @@ import {
 } from "./browser-fixture.js";
 import {createThreadOverApi, listThreadsOverApi} from "./comment-api.js";
 
+function presenceRoute(url: URL): boolean {
+  return url.pathname === "/api/v1/agents";
+}
+
 test.describe("Artifact Server Review comment cards", () => {
   test("CMT-010-B: a new comment retried after a lost response replays its key and stays one thread", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
@@ -233,6 +237,49 @@ test.describe("Artifact Server Review comment cards", () => {
       await page.getByRole("button", {name: "Show sent comments"}).click();
       await expect(page.getByRole("button", {name: "Sent (1)"}))
         .toHaveAttribute("aria-pressed", "true");
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
+  test("a failed presence check reads as unknown and disables sending with a reason", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishNew(fixture.server, fixture.installation, {
+        accessSetting: "account_required",
+        content: "<!doctype html><html lang=\"en\"><h1>Presence fixture</h1></html>",
+        idempotencyKey: "review-comment-stale-presence",
+        name: "Presence fixture",
+      });
+      await createThreadOverApi(fixture, {
+        artifactId: published.body.artifact.id,
+        body: "Waiting for an agent.",
+        idempotencyKey: "review-comment-stale-presence-thread",
+        versionId: published.body.version.id,
+      });
+      await connectAgentOverApi(fixture, "builder");
+      await localLogin(fixture);
+      const page = fixture.page;
+      await page.goto(`${fixture.server.baseUrl}/review?${new URLSearchParams({
+        artifact: published.body.artifact.id,
+        project: "prj_default",
+        version: published.body.version.id,
+      })}`);
+      await page.getByRole("tab", {name: /Comments/u}).click();
+      const sendAll = page.getByRole("button", {name: "Send all open (1) to builder"});
+      await expect(sendAll).toBeEnabled();
+
+      await page.route(presenceRoute, (route) => route.abort());
+      await page.getByRole("button", {exact: true, name: "Reload"}).click();
+      await expect(page.getByText("Agent status unknown — the last check failed."))
+        .toBeVisible();
+      await expect(page.getByText("Can't send until agent status is known.")).toBeVisible();
+      await expect(sendAll).toBeDisabled();
+      await expect(page.getByRole("button", {name: "builder — Idle"})).toHaveCount(0);
+
+      await page.unroute(presenceRoute);
+      await page.getByRole("button", {exact: true, name: "Reload"}).click();
+      await expect(sendAll).toBeEnabled();
     } finally {
       await stopBrowserFixture(fixture);
     }

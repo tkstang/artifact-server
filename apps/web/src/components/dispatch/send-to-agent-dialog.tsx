@@ -134,6 +134,7 @@ export function SendToAgentControl({
   projectId,
   reasonDisplay = "inline",
   resolveBundle,
+  unavailableReason = null,
 }: {
   /** The polled presence list, or null while the surface is reading it. */
   readonly agents: readonly AgentPresence[] | null;
@@ -151,6 +152,11 @@ export function SendToAgentControl({
   /** Whether this control repeats its disabled-state explanation beside the buttons. */
   readonly reasonDisplay?: "hidden" | "inline";
   readonly resolveBundle: () => Promise<DispatchBundle>;
+  /**
+   * Why `agents` cannot be trusted right now (a failed presence poll). While
+   * set, nothing sends: a stale "connected" must not stand in for a live one.
+   */
+  readonly unavailableReason?: string | null;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -205,13 +211,15 @@ export function SendToAgentControl({
     : null;
   const noAgents = knownConnected !== null && knownConnected.length === 0;
   const nothingToSend = openCount === 0;
-  const mainReason = nothingToSend
-    ? "Nothing open to send."
-    : disconnectedDefaultName !== null
-      ? `${disconnectedDefaultName} disconnected — pick another`
-      : noAgents
-        ? "No agent connected — connect one to send."
-        : null;
+  const mainReason = unavailableReason !== null
+    ? unavailableReason
+    : nothingToSend
+      ? "Nothing open to send."
+      : disconnectedDefaultName !== null
+        ? `${disconnectedDefaultName} disconnected — pick another`
+        : noAgents
+          ? "No agent connected — connect one to send."
+          : null;
   const mainLabel = mainAgent === null
     ? disconnectedDefaultName === null || oneAgentLabel === undefined
       ? label
@@ -363,7 +371,8 @@ export function SendToAgentControl({
   const menuAgents = knownConnected?.filter((agent) =>
     mainAgent === null || agent.id !== mainAgent.id
   ) ?? [];
-  const caretDisabled = agents === null || noAgents || nothingToSend || quickPending;
+  const caretDisabled = agents === null || noAgents || nothingToSend || quickPending
+    || unavailableReason !== null;
 
   return (
     <div className="as-send-to-agent inline-flex flex-wrap items-center gap-2">

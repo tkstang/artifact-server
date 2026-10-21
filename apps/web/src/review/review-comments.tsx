@@ -50,7 +50,15 @@ import {
 const threadPageSize = 100;
 const conversationLoadConcurrency = 6;
 
-function agentPresenceSummary(agents: readonly AgentPresence[] | null): string {
+/** Said while the last presence check failed: the old list may be wrong. */
+const presenceUnknownSummary = "Agent status unknown — the last check failed.";
+const presenceUnknownReason = "Can't send until agent status is known.";
+
+function agentPresenceSummary(
+  agents: readonly AgentPresence[] | null,
+  stale: boolean,
+): string {
+  if (stale) return presenceUnknownSummary;
   if (agents === null) return "Checking presence…";
   const connectedCount = agents.filter((agent) => agent.connected).length;
   const offlineCount = agents.length - connectedCount;
@@ -583,7 +591,8 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
 }, ref) {
   const unanchored = new Set(session.unanchoredIds);
   const [agents, setAgents] = useState<readonly AgentPresence[] | null>(null);
-  const [agentError, setAgentError] = useState<Error | null>(null);
+  // A failed poll makes the last list stale: it may no longer be connected.
+  const [presenceStale, setPresenceStale] = useState(false);
   const [view, setView] = useState<CommentView>("open");
   const [sentThreads, setSentThreads] = useState<readonly CommentThread[]>([]);
   const [sentReplies, setSentReplies] = useState<ReadonlyMap<
@@ -600,9 +609,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
   const loadAgents = useCallback(async (): Promise<void> => {
     try {
       setAgents(await api.agentPresence());
-      setAgentError(null);
-    } catch (caught) {
-      setAgentError(caught instanceof Error ? caught : new Error("Agent presence failed."));
+      setPresenceStale(false);
+    } catch {
+      setPresenceStale(true);
     }
   }, []);
 
@@ -718,17 +727,16 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
       <div className="as-comments__agents">
         <div>
           <strong>Agents</strong>
-          <span>{agentPresenceSummary(agents)}</span>
+          <span data-stale={presenceStale ? "true" : undefined}>
+            {agentPresenceSummary(agents, presenceStale)}
+          </span>
         </div>
         <div aria-label="Agent presence" role="group">
-          {agents?.map((agent) => (
+          {presenceStale ? null : agents?.map((agent) => (
             <PresenceAvatar agent={agent} key={agent.id} now={now} />
           ))}
         </div>
       </div>
-      {agentError === null ? null : (
-        <p className="as-comments__agent-error">{agentError.message}</p>
-      )}
       {readFailed ? (
         <div className="as-comments__read-error" role="alert">
           <p>Comments could not be loaded. {session.loadError?.message}</p>
@@ -756,6 +764,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
             principalId={principalId}
             projectId={session.projectId}
             resolveBundle={() => Promise.resolve(bundleOfThreads(openThreads))}
+            unavailableReason={presenceStale ? presenceUnknownReason : null}
           />
         </div>
       ) : null}
@@ -895,6 +904,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                               projectId={session.projectId}
                               reasonDisplay="hidden"
                               resolveBundle={() => Promise.resolve(bundleOfThreads([thread]))}
+                              unavailableReason={presenceStale ? presenceUnknownReason : null}
                             />
                           ) : null}
                           {thread.path === null ? null : (
