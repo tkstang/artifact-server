@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { installDraftGuard } from "@/components/comments/comment-drafts";
 
-import { ReviewApp } from "./review-app.tsx";
+import { initialReviewTheme, ReviewApp } from "./review-app.tsx";
 import "../index.css";
 import "./review.css";
 import "./calm/index.css";
@@ -12,9 +12,7 @@ import "./calm/index.css";
 // logout purge must not depend on which screen is mounted.
 installDraftGuard();
 
-const initialTheme = window.localStorage.getItem("artifact-review-theme") === "dawn"
-  ? "dawn"
-  : "moon";
+const initialTheme = initialReviewTheme();
 document.documentElement.dataset["reviewTheme"] = initialTheme;
 document.documentElement.classList.toggle("dark", initialTheme === "moon");
 

@@ -64,6 +64,9 @@ test.describe("Artifact Server frontend MVP", () => {
       expect(legacyReview.status()).toBe(308);
       expect(legacyReview.headers()["location"]).toBe("/review?project=prj_default");
 
+      // Start dark so the theme switch below is observable; a first visit
+      // otherwise follows the OS colour scheme.
+      await fixture.page.emulateMedia({colorScheme: "dark"});
       await localLogin(fixture);
       await fixture.page.goto(`${fixture.server.baseUrl}/review`);
 

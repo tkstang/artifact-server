@@ -146,6 +146,9 @@ test.describe("Markdown review", () => {
       const first = await publishNew(fixture.server, fixture.installation, {
         accessSetting: "account_required", content: source, path: "workflow.md", mediaType: "text/markdown", idempotencyKey: "markdown-mermaid-one",
       });
+      // Start dark so the theme switch below is observable; a first visit
+      // otherwise follows the OS colour scheme.
+      await fixture.page.emulateMedia({colorScheme: "dark"});
       await localLogin(fixture);
       const url = `${fixture.server.baseUrl}/review?project=prj_default&artifact=${first.body.artifact.id}&version=${first.body.version.id}`;
       await fixture.page.goto(url);

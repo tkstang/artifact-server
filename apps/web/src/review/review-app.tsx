@@ -78,7 +78,7 @@ import {useReviewPanelMotion} from "./use-review-panel-motion.ts";
 import {useReviewResizablePanel} from "./use-review-resizable-panel.ts";
 import {useWebmcp, type WebmcpBindings} from "./webmcp.tsx";
 
-type ReviewTheme = "dawn" | "moon";
+export type ReviewTheme = "dawn" | "moon";
 type InspectorTab = "activity" | "comments" | "compare" | "details" | "files" | "versions";
 type ArtifactListLoadResult = "failed" | "loaded" | "skipped";
 type CatalogCommentFilter = "all" | "with" | "without";
@@ -368,7 +368,7 @@ export function ReviewApp() {
     "loading" | "ready" | "unauthenticated"
   >("loading");
   const [error, setError] = useState<Error | null>(null);
-  const [theme, setTheme] = useState<ReviewTheme>(readInitialTheme);
+  const [theme, setTheme] = useState<ReviewTheme>(initialReviewTheme);
 
   const bootstrap = useCallback(async (): Promise<void> => {
     if (bootstrapInFlightRef.current) return;
@@ -2741,10 +2741,11 @@ function ReviewGate({
   );
 }
 
-function readInitialTheme(): ReviewTheme {
-  return window.localStorage.getItem("artifact-review-theme") === "dawn"
-    ? "dawn"
-    : "moon";
+/** A saved choice wins; a first visit follows the OS and falls back to light. */
+export function initialReviewTheme(): ReviewTheme {
+  const saved = window.localStorage.getItem("artifact-review-theme");
+  if (saved === "dawn" || saved === "moon") return saved;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "moon" : "dawn";
 }
 
 function readInitialInspectorOpen(): boolean {
