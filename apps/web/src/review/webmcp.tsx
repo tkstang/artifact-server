@@ -608,26 +608,56 @@ export function useWebmcp(ref: BindingsRef): void {
   }, [enabled, ref]);
 }
 
-/** The per-user browser-agent preference shown on the WebMCP settings page. */
+/**
+ * Whether this browser provides WebMCP, by the same check registration uses.
+ * Display only: registration still reads the model context itself.
+ */
+export function webmcpAvailable(): boolean {
+  return readModelContext() !== null;
+}
+
+/**
+ * The per-user browser-agent preference shown on the WebMCP settings page,
+ * with whether this browser can act on it. The preference is stored either
+ * way; without a model context nothing registers, exactly as before.
+ */
 export function WebmcpSettingsCard() {
   const [enabled, setEnabled] = useState(webmcpEnabled);
+  const [available] = useState(webmcpAvailable);
   return (
-    <label className="as-settings__webmcp">
-      <input
-        checked={enabled}
-        onChange={(event) => {
-          setEnabled(event.currentTarget.checked);
-          setWebmcpEnabled(event.currentTarget.checked);
-        }}
-        type="checkbox"
-      />
-      <span>
-        <strong>Browser agent tools</strong>
-        <small>
-          Let a browser-resident AI agent operate Review through WebMCP tools in this session.
-          Dispatching to coding agents stays a human action.
-        </small>
-      </span>
-    </label>
+    <div className="as-settings__webmcp-card">
+      <p
+        className="as-settings__webmcp-status"
+        data-available={available}
+        id="webmcp-availability"
+      >
+        <span aria-hidden="true" />
+        {available ? "Available in this browser" : "Not available in this browser"}
+      </p>
+      <label className="as-settings__webmcp">
+        <input
+          aria-describedby="webmcp-availability"
+          checked={enabled}
+          onChange={(event) => {
+            setEnabled(event.currentTarget.checked);
+            setWebmcpEnabled(event.currentTarget.checked);
+          }}
+          type="checkbox"
+        />
+        <span>
+          <strong>Browser agent tools</strong>
+          <small>
+            Your preference: let a browser-resident AI agent operate Review through WebMCP tools
+            in this session. Dispatching to coding agents stays a human action.
+          </small>
+        </span>
+      </label>
+      {available ? null : (
+        <p className="as-settings__webmcp-note">
+          This browser does not provide WebMCP, so no tools are offered here. Your preference is
+          saved and takes effect in a browser that supports it.
+        </p>
+      )}
+    </div>
   );
 }

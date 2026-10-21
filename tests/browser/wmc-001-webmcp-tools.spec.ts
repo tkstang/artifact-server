@@ -215,6 +215,16 @@ test.describe("WMC-001 WebMCP review tools", () => {
       expect(await fixture.page.evaluate(() => "modelContext" in document)).toBe(false);
       expect(consoleMessages).toEqual([]);
 
+      // Settings says the browser cannot act on the preference rather than
+      // presenting an enabled-looking switch as working; the stored
+      // preference itself is untouched.
+      await fixture.page.goto(`${fixture.server.baseUrl}/review/settings/webmcp`);
+      await expect(fixture.page.getByText("Not available in this browser", {exact: true}))
+        .toBeVisible();
+      await expect(fixture.page.getByRole("checkbox", {name: /Browser agent tools/}))
+        .toBeChecked();
+      expect(consoleMessages).toEqual([]);
+
       // With a model context the tools register by default; switching the
       // preference off unregisters them live (the abort-signal path), the
       // settings page shows the stored choice, and switching it back on
@@ -251,6 +261,7 @@ test.describe("WMC-001 WebMCP review tools", () => {
           .withTags(["wcag2a", "wcag2aa"])
           .analyze();
         expect(accessibility.violations).toEqual([]);
+        await expect(page.getByText("Available in this browser", {exact: true})).toBeVisible();
         const toggle = page.getByRole("checkbox", {name: /Browser agent tools/});
         await expect(toggle).not.toBeChecked();
         await toggle.check();
