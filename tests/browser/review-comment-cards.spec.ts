@@ -220,6 +220,7 @@ test.describe("Artifact Server Review comment cards", () => {
       await page.getByRole("button", {name: "Send all open (1) to builder"}).click();
       await expect(page.getByText("1 comment is with builder.", {exact: true})).toBeVisible();
       await expect(page.getByText("All comments on this version are resolved.")).toHaveCount(0);
+      await expect(page.locator(".as-comments__counts")).toHaveText("0 open · 1 with builder");
       await page.getByRole("button", {name: "Show sent comments"}).click();
       await expect(page.getByRole("button", {name: "Sent (1)"}))
         .toHaveAttribute("aria-pressed", "true");

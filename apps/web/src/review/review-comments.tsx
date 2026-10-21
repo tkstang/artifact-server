@@ -784,6 +784,16 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
       {sentError === null || readFailed ? null : (
         <p className="as-comments__error" role="alert">{sentError.message}</p>
       )}
+      {readFailed || (openThreads.length === 0 && agentWork.total === 0) ? null : (
+        // Each count names its scope: open means not yet sent, so it is
+        // exactly what Send all carries; the rest are held by an agent.
+        <p className="as-comments__counts">
+          {[
+            `${openThreads.length} open`,
+            ...agentWork.byAgent.map(([name, count]) => `${count} with ${name}`),
+          ].join(" · ")}
+        </p>
+      )}
       {readFailed ? null : (
         <nav aria-label="Comment filters" className="as-comments__filters">
           {(["open", "all", "resolved", "sent"] as const).map((candidate) => (

@@ -241,3 +241,10 @@
   background: var(--as-hover);
   border-color: transparent;
 }
+
+.as-comments__counts {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  margin: 0;
+  padding: 0 1rem 0.5rem;
+}
