@@ -72,12 +72,12 @@ test.describe("Markdown review", () => {
       await expect(preview.locator("pre code .hljs-keyword")).toHaveText("const");
       await expect(preview.getByRole("navigation", {name: "Document sections"})).toBeVisible();
       await expect(preview.getByRole("link", {name: "Delivery section"})).toHaveAttribute("href", "#md-4-delivery");
-      await fixture.page.getByRole("button", {name: /^Annotate mode:/u}).click();
+      await fixture.page.getByRole("button", {name: "Commenting", exact: true}).click();
       await preview.getByRole("link", {name: "Delivery section"}).click();
       await expect(preview.getByRole("heading", {name: "Delivery", exact: true})).toBeVisible();
       await expect(preview.getByRole("heading", {name: "Release plan"})).toHaveCount(1);
       expect(await preview.getByRole("heading", {name: "Delivery", exact: true}).evaluate((element) => element.getBoundingClientRect().top)).toBeLessThan(100);
-      await fixture.page.getByRole("button", {name: /^Interact mode:/u}).click();
+      await fixture.page.getByRole("button", {name: "Reading", exact: true}).click();
       await expect(review.locator("iframe")).toHaveAttribute("sandbox", "allow-scripts");
       await expect(preview.locator("img")).toHaveCount(1);
       await preview.getByRole("img", {name: "Local diagram"}).scrollIntoViewIfNeeded();

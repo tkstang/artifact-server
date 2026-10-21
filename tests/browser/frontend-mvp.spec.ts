@@ -152,14 +152,18 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(preview.getByRole("heading", {name: "Review preview content"}))
         .toBeVisible();
 
+      // The visible label is the toggle's name; the instructions describe it.
       const annotateMode = fixture.page.getByRole("button", {
-        name: /^Annotate mode:/u,
+        exact: true,
+        name: "Commenting",
       });
       await expect(annotateMode).toHaveAttribute("aria-pressed", "true");
+      await expect(annotateMode).toHaveAccessibleDescription(/^Click an element or select text to comment/u);
       await preview.locator("#review-native-action").focus();
       await fixture.page.keyboard.press("Escape");
       const interactMode = fixture.page.getByRole("button", {
-        name: /^Interact mode:/u,
+        exact: true,
+        name: "Reading",
       });
       await expect(interactMode).toHaveAttribute("aria-pressed", "false");
       await preview.locator("#review-native-action").click();
@@ -468,11 +472,11 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.locator(".as-preview-panel").focus();
       await fixture.page.keyboard.press("f");
       await expect(fixture.page.getByRole("button", {name: "Exit full screen"})).toBeVisible();
-      await expect(fixture.page.getByRole("button", {name: "Annotate mode", exact: true}))
+      await expect(fixture.page.getByRole("button", {name: "Commenting", exact: true}))
         .toHaveAttribute("aria-pressed", "true");
       await fixture.page.keyboard.press("Escape");
       const focusInteractMode = fixture.page.getByRole("button", {
-        name: "Interact mode",
+        name: "Reading",
         exact: true,
       });
       await expect(focusInteractMode).toHaveAttribute("aria-pressed", "false");
@@ -616,7 +620,7 @@ test.describe("Artifact Server frontend MVP", () => {
         .analyze();
       expect(accessibility.violations).toEqual([]);
 
-      await fixture.page.getByRole("button", {name: /^Interact mode:/u}).click();
+      await fixture.page.getByRole("button", {name: "Reading", exact: true}).click();
       await preview.locator("#review-theme-target").click();
       const themedCommentPopover = reviewFrame.locator('[data-comment-popover="true"]');
       await expect(themedCommentPopover).toBeVisible();

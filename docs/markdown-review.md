@@ -174,8 +174,9 @@ In another terminal, publish this design note as a Markdown artifact:
 pnpm artifactserver publish docs/markdown-review.md --data .artifact-server/markdown-review-demo --server http://127.0.0.1:8799 --name "Markdown review demo"
 ```
 
-Open the returned review link. Use Interact mode for document navigation and
-Annotate mode for comments. The data path is gitignored and local to this worktree.
+Open the returned review link. Contents links move through the document in
+either mode; switch to Reading to use other links and controls, and to
+Commenting to add comments. The data path is gitignored and local to this worktree.
 The automated synthetic v1/comment/v2 demonstration remains in the browser test.
 
 To regenerate the visual evidence using only the local harness:

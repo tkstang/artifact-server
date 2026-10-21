@@ -1781,7 +1781,6 @@ function ArtifactReview({
                     <AnnotateModeToggle
                       active={htmlAnnotateModeActive}
                       className="as-button as-focus-controls__button"
-                      compactName
                       onToggle={() => setHtmlAnnotateModeActive((active) => !active)}
                     />
                   ) : null}
@@ -2335,29 +2334,29 @@ function ReviewDownloadControl({
   );
 }
 
-const annotateModeDescription = "Annotate mode: click an element or select text to comment. Press Escape to interact.";
-const interactModeDescription = "Interact mode: links and controls work normally. Select text or turn annotation mode back on to comment.";
+const commentingModeDescription = "Click an element or select text to comment. Press Escape to read.";
+const readingModeDescription = "Links and controls work normally. Select text, or turn commenting back on, to comment.";
 
 /**
  * Switch between commenting on the document and using it. The visible label
- * says what the reader is doing; the accessible name keeps the mode's name.
+ * says what the reader is doing and is the accessible name, even where a
+ * narrow header hides it; the longer instructions are its description.
  */
 function AnnotateModeToggle({
   active,
   className,
-  compactName = false,
   onToggle,
 }: {
   readonly active: boolean;
   readonly className: string;
-  /** Name the toggle by its mode alone (the focus toolbar); otherwise with its description. */
-  readonly compactName?: boolean;
   readonly onToggle: () => void;
 }) {
-  const description = active ? annotateModeDescription : interactModeDescription;
+  const id = useId();
+  const description = active ? commentingModeDescription : readingModeDescription;
   return (
     <button
-      aria-label={compactName ? (active ? "Annotate mode" : "Interact mode") : description}
+      aria-describedby={`${id}-description`}
+      aria-labelledby={`${id}-label`}
       aria-pressed={active}
       className={className}
       data-active={active}
@@ -2366,7 +2365,10 @@ function AnnotateModeToggle({
       type="button"
     >
       <HugeiconsIcon aria-hidden="true" icon={Edit02Icon} strokeWidth={1.8} />
-      <span className="as-button__label">{active ? "Commenting" : "Reading"}</span>
+      <span className="as-button__label" id={`${id}-label`}>
+        {active ? "Commenting" : "Reading"}
+      </span>
+      <span className="as-visually-hidden" id={`${id}-description`}>{description}</span>
     </button>
   );
 }
