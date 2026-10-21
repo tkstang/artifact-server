@@ -301,7 +301,7 @@ export function SettingsProject({
         )}
         description={project.archivedAt === null
           ? "Manage this project's name, lifecycle, and optional history."
-          : "This project is archived. Existing artifacts and immutable versions remain readable."}
+          : "This project is archived. Everything already published stays readable."}
         title={project.name}
       />
       {error === null ? null : <ErrorPanel error={error} />}
@@ -309,7 +309,7 @@ export function SettingsProject({
       <section className="grid gap-5 border p-5 sm:p-6" aria-labelledby="project-identity-heading">
         <div>
           <h2 className="font-heading text-lg font-semibold" id="project-identity-heading">Project identity</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Renaming changes the label, not the stable project ID.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Renaming changes the name people see. Links keep working.</p>
         </div>
         <div className="grid max-w-xl gap-2">
           <Label htmlFor="settings-rename-project">Project name</Label>
@@ -348,7 +348,7 @@ export function SettingsProject({
               </p>
             </div>
             <StatusBadge tone={gitSetting?.enabled === true ? "primary" : "neutral"}>
-              {gitSetting === null ? "Loading" : gitSetting.state.replaceAll("-", " ")}
+              {gitSetting === null ? "Loading" : sentenceCase(gitSetting.state.replaceAll("-", " "))}
             </StatusBadge>
           </div>
           <div>
@@ -381,7 +381,7 @@ export function SettingsProject({
           <h2 className="font-heading text-lg font-semibold" id="project-lifecycle-heading">Project lifecycle</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
             {project.archivedAt === null
-              ? "Archiving stops new artifacts and versions. Existing reads, links, and immutable history remain."
+              ? "Archiving stops new artifacts and versions. Everything already published stays readable, and links keep working."
               : "Unarchive this project to accept new artifacts and versions again."}
           </p>
         </div>
@@ -403,7 +403,7 @@ export function SettingsProject({
                 <DialogTitle>{project.archivedAt === null ? "Archive project?" : "Unarchive project?"}</DialogTitle>
                 <DialogDescription>
                   {project.archivedAt === null
-                    ? "New publication stops. Saved artifacts, links, and immutable versions remain readable."
+                    ? "Publishing stops. Everything already published stays readable, and links keep working."
                     : "This project will accept new artifacts and versions again."}
                 </DialogDescription>
               </DialogHeader>
@@ -445,4 +445,8 @@ export function SettingsProject({
       </Dialog>
     </div>
   );
+}
+
+function sentenceCase(text: string): string {
+  return text.charAt(0).toLocaleUpperCase("en-US") + text.slice(1);
 }

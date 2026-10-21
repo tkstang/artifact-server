@@ -137,7 +137,7 @@ export function MembersScreen() {
             </DialogContent>
           </Dialog>
         )}
-        description="One installation has one closed member group. There is no public sign-up or project-specific membership."
+        description="People who can sign in to this server. There is no public sign-up, and every member can work in every project."
         eyebrow="Administration"
         title="Members"
       />
@@ -172,7 +172,7 @@ export function MembersScreen() {
                     <td className="px-4 py-4 capitalize" data-cell="meta">{member.role}</td>
                     <td className="px-4 py-4" data-cell="meta">
                       <StatusBadge tone={member.status === "active" ? "primary" : "neutral"}>
-                        {member.status}
+                        {member.status === "active" ? "Active" : "Inactive"}
                       </StatusBadge>
                     </td>
                     <td
