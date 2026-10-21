@@ -276,4 +276,23 @@ test.describe("Review shell", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("CMT-016-F: an unavailable Review target is reported once, with a way back", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      await publishShellFixture(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await localLogin(fixture);
+      await fixture.page.goto(`${fixture.server.baseUrl}/review?project=prj_default&artifact=art_missing-shell-target`);
+      await expect(fixture.page.getByRole("heading", {name: "Review target unavailable"})).toBeVisible();
+      await expect(fixture.page.getByRole("alert")).toHaveCount(0);
+      await expect(fixture.page.getByText("Nothing selected")).toHaveCount(0);
+
+      await fixture.page.getByRole("button", {name: "Back to the catalog"}).click();
+      await expect(fixture.page.getByRole("heading", {name: "Select an artifact"})).toBeVisible();
+      expect(new URL(fixture.page.url()).searchParams.get("artifact")).toBeNull();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });

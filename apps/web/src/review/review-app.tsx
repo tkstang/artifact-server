@@ -25,7 +25,6 @@ import {
   Home01Icon,
   KeyboardIcon,
   LayoutLeftIcon,
-  Link01Icon,
   Moon02Icon,
   MoreHorizontalIcon,
   PanelRightIcon,
@@ -776,6 +775,11 @@ function ArtifactReview({
     ({artifact}) => artifact.id === selectedArtifactId,
   );
   const selectedItem = selectedIndex < 0 ? null : catalogItems[selectedIndex] ?? null;
+  const catalogFiltered = query !== "" || catalogCommentFilter !== "all" || catalogTagFilters.length > 0;
+  const catalogEmpty = !listLoading && listError === null && catalogItems.length === 0;
+  // An empty project says so once, in the catalog; the canvas and the
+  // inspector stay quiet instead of repeating "nothing selected".
+  const projectEmpty = catalogEmpty && !catalogFiltered && selectedArtifactId === null;
   const loadArtifacts = useCallback(async (
     cursor: string | null,
     replace: boolean,
@@ -1383,6 +1387,10 @@ function ArtifactReview({
     return () => window.removeEventListener("keydown", revealFocusControls);
   }, [focusMode]);
   const artifactTitle = details?.artifact.name ?? selectedItem?.artifact.name ?? null;
+  const reviewTargetUnavailable = selectedArtifactId !== null
+    && detailError !== null
+    && selectedVersion === null
+    && !(detailLoading && details === null);
   const versionIdentity = selectedVersion === null || details === null
     ? null
     : {
@@ -1617,19 +1625,14 @@ function ArtifactReview({
           {listLoading && items.length === 0 ? (
             <InlineState description="Reading this project." title="Loading artifacts" />
           ) : null}
-          {!listLoading && listError === null && catalogItems.length === 0 ? (
+          {catalogEmpty && catalogFiltered ? (
             <InlineState
-              description={
-                query !== "" || catalogCommentFilter !== "all" || catalogTagFilters.length > 0
-                  ? "Try clearing a filter or using a wider search."
-                  : "Publish from the CLI to populate this project."
-              }
-              title={
-                query !== "" || catalogCommentFilter !== "all" || catalogTagFilters.length > 0
-                  ? "No matching artifacts"
-                  : "No artifacts yet"
-              }
+              description="Try clearing a filter or using a wider search."
+              title="No matching artifacts"
             />
+          ) : null}
+          {catalogEmpty && !catalogFiltered ? (
+            <EmptyProjectState projectId={projectId} />
           ) : null}
           {catalogItems.map(({artifact, commentCount, versionCount}) => {
             return (
@@ -1898,31 +1901,35 @@ function ArtifactReview({
                   onToggle={() => setHtmlAnnotateModeActive((active) => !active)}
                 />
               ) : null}
-              <ReviewShareControl
-                details={details}
-                key={`header-share-${details?.artifact.id ?? "empty"}`}
-                onArtifactChanged={updateArtifact}
-                selectedPath={selectedPath}
-                selectedVersion={selectedVersion}
-                triggerClassName="as-button as-button--secondary"
-              />
-              <button
-                aria-label="Full screen"
-                aria-keyshortcuts="F"
-                className="as-icon-button as-preview-header__full-screen"
-                disabled={selectedVersionId === null}
-                onClick={enterFocusMode}
-                title="Full screen (F)"
-                type="button"
-              >
-                <HugeiconsIcon aria-hidden="true" icon={FullScreenIcon} strokeWidth={1.8} />
-              </button>
-              <ReviewMoreActions
-                download={download}
-                onOpenRawArtifact={() => void openRawArtifact()}
-                opening={opening}
-                rawDisabled={selectedVersionId === null}
-              />
+              {selectedArtifactId === null ? null : (
+                <>
+                  <ReviewShareControl
+                    details={details}
+                    key={`header-share-${details?.artifact.id ?? "empty"}`}
+                    onArtifactChanged={updateArtifact}
+                    selectedPath={selectedPath}
+                    selectedVersion={selectedVersion}
+                    triggerClassName="as-button as-button--secondary"
+                  />
+                  <button
+                    aria-label="Full screen"
+                    aria-keyshortcuts="F"
+                    className="as-icon-button as-preview-header__full-screen"
+                    disabled={selectedVersionId === null}
+                    onClick={enterFocusMode}
+                    title="Full screen (F)"
+                    type="button"
+                  >
+                    <HugeiconsIcon aria-hidden="true" icon={FullScreenIcon} strokeWidth={1.8} />
+                  </button>
+                  <ReviewMoreActions
+                    download={download}
+                    onOpenRawArtifact={() => void openRawArtifact()}
+                    opening={opening}
+                    rawDisabled={selectedVersionId === null}
+                  />
+                </>
+              )}
               {!inspectorOpen ? (
                 <IconButton
                   keyShortcuts="]"
@@ -1937,16 +1944,44 @@ function ArtifactReview({
           </header>
 
           <div className="as-preview-panel__body" data-preview-kind={previewKind}>
-            {detailError === null ? null : (
+            {detailError === null || reviewTargetUnavailable ? null : (
               <div className="as-preview-error" role="alert">{detailError.message}</div>
             )}
             {selectedArtifactId === null ? (
-              <PreviewWelcome />
+              projectEmpty ? null : <PreviewWelcome />
             ) : detailLoading && details === null ? (
-              <PreviewWelcome description="Loading artifact metadata and immutable history." title="Reading artifact" />
-            ) : detailError !== null && selectedVersion === null ? (
+              <PreviewWelcome description="Loading the artifact." title="Opening artifact" />
+            ) : reviewTargetUnavailable ? (
               <PreviewWelcome
-                description="The project, artifact, or version named by this Review URL is unavailable."
+                action={(
+                  <div className="as-preview-welcome__actions">
+                    {details === null ? null : (
+                      <button
+                        className="as-button as-button--primary"
+                        onClick={() => selectArtifact(details.artifact.id, details.artifact.currentVersionId)}
+                        type="button"
+                      >
+                        Open the current version
+                      </button>
+                    )}
+                    <button
+                      className={details === null ? "as-button as-button--primary" : "as-button as-button--secondary"}
+                      onClick={() => {
+                        setDetailError(null);
+                        setSelectedArtifactId(null);
+                        setSelectedVersionId(null);
+                        setSelectedPath(null);
+                        setCatalogOpen(true);
+                      }}
+                      type="button"
+                    >
+                      Back to the catalog
+                    </button>
+                  </div>
+                )}
+                description={details === null
+                  ? "This link names an artifact that is not available here. It may have been deleted, belong to another project, or need access you do not have."
+                  : "This link names a version of this artifact that is not available here."}
                 title="Review target unavailable"
               />
             ) : (
@@ -2048,7 +2083,7 @@ function ArtifactReview({
             <div className="as-preview-footer__status">
               <span className="as-preview-footer__metadata">
                 {selectedVersion === null
-                  ? "No version selected"
+                  ? ""
                   : `Version ${selectedVersion.version.number} of ${Math.max(versions.length, selectedVersion.version.number)} · ${selectedVersion.manifest.entries.length} file${selectedVersion.manifest.entries.length === 1 ? "" : "s"}`}
               </span>
               <button
@@ -2141,7 +2176,9 @@ function ArtifactReview({
             tabIndex={0}
           >
             {details === null || selectedVersion === null ? (
-              <InlineState description="Select an artifact to inspect its immutable record." title="Nothing selected" />
+              projectEmpty || reviewTargetUnavailable ? null : (
+                <InlineState description="Choose an artifact to see its comments and details." title="Nothing selected" />
+              )
             ) : inspectorTab === "details" ? (
               <DetailsInspector
                 canManage={canManageArtifacts}
@@ -2969,18 +3006,50 @@ function AccessPill({access}: {readonly access: ArtifactDetails["artifact"]["acc
 }
 
 function PreviewWelcome({
-  description = "Choose an artifact from the catalog to inspect its current immutable version.",
+  action,
+  description = "Choose an artifact from the catalog to read it here.",
   title = "Select an artifact",
 }: {
+  readonly action?: ReactNode;
   readonly description?: string;
   readonly title?: string;
 }) {
   return (
     <div className="as-preview-welcome">
-      <span aria-hidden="true"><HugeiconsIcon icon={Link01Icon} strokeWidth={1.4} /></span>
-      <p>Immutable artifact workspace</p>
       <h2>{title}</h2>
       <small>{description}</small>
+      {action}
+    </div>
+  );
+}
+
+/** The one empty state of a project with nothing published: how to publish here. */
+function EmptyProjectState({projectId}: {readonly projectId: string}) {
+  const command = `artifactserver publish report.html --project ${projectId}`;
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="as-catalog-empty" role="status">
+      <strong>No artifacts yet</strong>
+      <p>Publish a file or a finished folder from your terminal:</p>
+      <div className="as-catalog-empty__command">
+        <code>{command}</code>
+        <button
+          className="as-button as-button--secondary"
+          onClick={() => {
+            void navigator.clipboard.writeText(command).then(
+              () => setCopied(true),
+              () => setCopied(false),
+            );
+          }}
+          type="button"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <p>
+        Or connect an agent in <a href="/review/settings/mcp">Settings → MCP</a> and
+        ask it to publish here.
+      </p>
     </div>
   );
 }

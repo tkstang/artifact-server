@@ -338,10 +338,81 @@ body {
     max-width: 8rem;
   }
 }
+
 /* On phones the focus bar wraps to a third row with the identity added;
    the Markdown reader starts below it. */
 @media (max-width: 600px) {
   .as-app[data-focus-mode="true"] .as-preview-panel__body[data-preview-kind="markdown"] {
     padding-top: 140px;
   }
+}
+
+/* Empty and error states: one plain message on the canvas, with a next step. */
+.as-preview-welcome {
+  background: transparent;
+  border: 0;
+}
+
+.as-preview-welcome h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.as-preview-welcome small {
+  font-size: 0.875rem;
+}
+
+.as-preview-welcome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.as-catalog-empty {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.25rem 1rem;
+}
+
+.as-catalog-empty strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.as-catalog-empty p {
+  color: var(--as-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.as-catalog-empty a {
+  color: var(--as-iris);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.as-catalog-empty__command {
+  align-items: center;
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem 0.35rem 0.35rem 0.6rem;
+}
+
+.as-catalog-empty__command code {
+  flex: 1;
+  font-family: var(--as-mono-font);
+  font-size: 0.75rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.as-catalog-empty__command .as-button {
+  flex: 0 0 auto;
 }
