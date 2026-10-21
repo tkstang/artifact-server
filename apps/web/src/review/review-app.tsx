@@ -2003,6 +2003,8 @@ function ArtifactReview({
             className="as-inspector__body"
             id="review-inspector-panel"
             role="tabpanel"
+            // The panel scrolls on its own; keyboard users need a stop to scroll it.
+            tabIndex={0}
           >
             {details === null || selectedVersion === null ? (
               <InlineState description="Select an artifact to inspect its immutable record." title="Nothing selected" />
