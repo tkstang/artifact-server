@@ -244,11 +244,13 @@ export function ApiKeysScreen() {
         ? (
           <StatePanel description="Loading managed API keys." title="Loading API keys" />
         )
-        : apiKeys.length === 0
+        : apiKeys.length === 0 && error !== null
+          ? null
+          : apiKeys.length === 0
           ? (
             <StatePanel
-              description="Issue a scoped key for automation or a compatible self-hosted MCP client."
-              title="No managed API keys"
+              description="Issue a key with Issue API key for automation or an MCP client that cannot sign in through the browser."
+              title="No API keys yet"
             />
           )
           : (

@@ -125,21 +125,18 @@ function SettingsContent({
   readonly route: SettingsRoute;
   readonly session: Session;
 }) {
+  const settingsHome = canManageProjects ? "/review/settings/projects" : "/review/settings/mcp";
   if (route.kind === "notFound") {
     return (
       <StatePanel
-        action={(
-          <ButtonLink href="/review/settings/projects" variant="outline">
-            View settings
-          </ButtonLink>
-        )}
-        description="This Artifact Server settings route does not exist."
+        action={<BackToSettings href={settingsHome} />}
+        description="There is no settings page at this address. It may have moved, or the link may be mistyped."
         title="Page not found"
       />
     );
   }
   if (route.kind === "projects" || route.kind === "project") {
-    if (!canManageProjects) return <ProjectPermissionRequired />;
+    if (!canManageProjects) return <ProjectPermissionRequired settingsHome={settingsHome} />;
     if (route.kind === "projects") {
       return (
         <SettingsProjects
@@ -162,7 +159,7 @@ function SettingsContent({
   }
   if (route.kind === "mcp") return <McpScreen administrator={administrator} />;
   if (route.kind === "webmcp") return <WebmcpScreen />;
-  if (!administrator) return <AdministratorPermissionRequired />;
+  if (!administrator) return <AdministratorPermissionRequired settingsHome={settingsHome} />;
   switch (route.kind) {
     case "members":
       return <MembersScreen />;
@@ -171,7 +168,7 @@ function SettingsContent({
     case "publicLinks":
       return <PublicLinksScreen />;
   }
-  return <AdministratorPermissionRequired />;
+  return <AdministratorPermissionRequired settingsHome={settingsHome} />;
 }
 
 function SettingsLink({
@@ -190,18 +187,28 @@ function SettingsLink({
   );
 }
 
-function ProjectPermissionRequired() {
+function BackToSettings({href}: {readonly href: string}) {
+  return (
+    <ButtonLink href={href} variant="outline">
+      Back to settings
+    </ButtonLink>
+  );
+}
+
+function ProjectPermissionRequired({settingsHome}: {readonly settingsHome: string}) {
   return (
     <StatePanel
-      description="This account cannot manage projects."
+      action={<BackToSettings href={settingsHome} />}
+      description="This account cannot manage projects. Ask an administrator if you need to."
       title="Project permission required"
     />
   );
 }
 
-function AdministratorPermissionRequired() {
+function AdministratorPermissionRequired({settingsHome}: {readonly settingsHome: string}) {
   return (
     <StatePanel
+      action={<BackToSettings href={settingsHome} />}
       description="Only an installation administrator can manage members, API keys, and public links."
       title="Administrator permission required"
     />

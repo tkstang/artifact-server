@@ -114,8 +114,10 @@ export function SettingsProjects({
 
       {orderedProjects.length === 0 ? (
         <StatePanel
-          description="Create a project to begin organizing artifacts in this installation."
-          title="No projects"
+          description={canManage
+            ? "Create a project with New project to start organizing artifacts."
+            : "Projects appear here once an administrator creates one."}
+          title="No projects yet"
         />
       ) : (
         <div className="as-settings-table border">
@@ -223,10 +225,10 @@ export function SettingsProject({
       <StatePanel
         action={(
           <ButtonLink href="/review/settings/projects" variant="outline">
-            View projects
+            Back to projects
           </ButtonLink>
         )}
-        description="The project named by this settings URL is unavailable."
+        description="This project does not exist, or the link to it is out of date."
         title="Project not found"
       />
     );
