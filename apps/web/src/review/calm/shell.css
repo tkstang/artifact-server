@@ -195,3 +195,11 @@ body {
   background: var(--as-love-soft);
   color: var(--as-love);
 }
+
+/* A pressed viewer control reads in the accent on its own wash, so its
+   label keeps AA contrast in both themes. */
+.as-focus-controls__button[data-active="true"] {
+  background: var(--as-iris-soft);
+  border-color: color-mix(in oklab, var(--as-iris) 40%, var(--as-border));
+  color: var(--as-iris);
+}
