@@ -363,6 +363,39 @@ test.describe("Review shell", () => {
     }
   });
 
+  test("leaving a comparison keeps one inspector tab in the tab order and the panel labelled", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const first = await publishShellFixture(fixture, "Compared fixture");
+      await publishVersion(fixture.server, fixture.installation, {
+        artifactId: first.body.artifact.id,
+        content: reviewDocument.replace("Body text", "Revised body text"),
+        expectedCurrentVersionId: first.body.version.id,
+        idempotencyKey: "review-shell-compared-v2",
+      });
+      await publishShellFixture(fixture, "Other fixture");
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await localLogin(fixture);
+      await fixture.page.goto(reviewUrl(fixture, first.body.artifact.id));
+      await fixture.page.getByRole("tab", {name: "Versions"}).click();
+      await fixture.page.getByRole("button", {name: "Compare", exact: true}).click();
+      await expect(fixture.page.getByRole("tab", {name: "Compare"})).toHaveAttribute("aria-selected", "true");
+
+      // Another artifact has no comparison, so the Compare tab goes away.
+      await fixture.page.locator(".as-artifact-card").filter({hasText: "Other fixture"}).click();
+      await expect(fixture.page.getByRole("heading", {name: "Other fixture", exact: true})).toBeVisible();
+      await expect(fixture.page.getByRole("tab", {name: "Compare"})).toHaveCount(0);
+      const reachable = fixture.page.locator("[role='tab'][tabindex='0']");
+      await expect(reachable).toHaveCount(1);
+      await expect(reachable).toHaveAttribute("aria-selected", "true");
+      const labelledBy = await fixture.page.getByRole("tabpanel").getAttribute("aria-labelledby");
+      expect(labelledBy).not.toBeNull();
+      await expect(fixture.page.locator(`#${labelledBy ?? ""}`)).toHaveCount(1);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
   test("CMT-015-F: an overlaying panel sits over a scrim and closes on an outside click", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {

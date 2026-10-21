@@ -643,6 +643,13 @@ function ArtifactReview({
     `${inspectorMotion.mounted}:${comparison === null ? "" : "compare"}`,
   );
   useEffect(() => {
+    // Clearing a comparison removes its tab; select one that still exists so
+    // the tab list keeps a focusable tab and the panel keeps its label.
+    if (comparison === null) {
+      setInspectorTab((tab) => tab === "compare" ? "comments" : tab);
+    }
+  }, [comparison]);
+  useEffect(() => {
     // Keep the selected tab in view when the strip scrolls.
     inspectorTabListRef.current
       ?.querySelector<HTMLElement>(`#review-inspector-tab-${inspectorTab}`)
