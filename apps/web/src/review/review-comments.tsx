@@ -20,7 +20,11 @@ import {
   type CommentThreadDetails,
   type CommentThreadQuery,
 } from "@/api/client";
-import {documentAnchorOf, quotedPassage} from "@/components/comments/comment-anchor";
+import {
+  documentAnchorOf,
+  inDocumentOrder,
+  quotedPassage,
+} from "@/components/comments/comment-anchor";
 import {CommentAuthor} from "@/components/comments/comment-author";
 import {CommentComposer} from "@/components/comments/comment-composer";
 import {useCommentDraft} from "@/components/comments/comment-drafts";
@@ -729,9 +733,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     : view === "all"
       ? [...openThreads, ...resolvedThreads]
       : view === "open"
-        ? session.threads.filter((thread) =>
+        ? inDocumentOrder(session.threads.filter((thread) =>
           thread.state === "open" || acknowledged.has(thread.id)
-        )
+        ))
         : resolvedThreads;
   const visibleReplies = view === "sent" ? sentReplies : session.repliesByThread;
   const loadingVisible = view === "sent" ? sentLoading : session.loading;

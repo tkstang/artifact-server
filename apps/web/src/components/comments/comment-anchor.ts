@@ -25,3 +25,32 @@ export function quotedPassage(anchor: ReviewAnchor): string {
     || "";
   return text.replaceAll(/\s+/gu, " ");
 }
+
+/**
+ * Reading order for a list of open comments: anchored comments first, by
+ * Markdown source line where the anchor records one, then by when they were
+ * written; general comments after them, newest first as the server lists
+ * them. Only the display order changes; counts and sends use the full set.
+ */
+export function inDocumentOrder(
+  threads: readonly CommentThread[],
+): readonly CommentThread[] {
+  const keyed = threads.map((thread, index) => {
+    const anchor = documentAnchorOf(thread);
+    return {
+      anchored: anchor !== null,
+      index,
+      line: anchor?.markdownSource?.startLine ?? Number.POSITIVE_INFINITY,
+      thread,
+    };
+  });
+  return keyed
+    .toSorted((left, right) => {
+      if (left.anchored !== right.anchored) return left.anchored ? -1 : 1;
+      if (!left.anchored) return left.index - right.index;
+      return left.line - right.line
+        || left.thread.createdAt.localeCompare(right.thread.createdAt)
+        || left.index - right.index;
+    })
+    .map(({thread}) => thread);
+}
