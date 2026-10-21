@@ -98,7 +98,7 @@ rest, per its [security guidance](https://pele.run/security):
   can't accept, such as `url(...)`, is a syntax error.
 - The frame's policy allows remote images, so a diagram that would load one (an
   `img:` shape) keeps its source, as Markdown images do. No icon or math resolver is
-  installed, so `fa:` icons and TeX stay text.
+  installed: `fa:` icon tokens are omitted and TeX stays text.
 - Sources are bounded to 20,000 characters and 5,000 edges.
 
 There is no extra SVG sanitizer or worker: Pele filters the output and the opaque

@@ -218,12 +218,14 @@ test.describe("Markdown review", () => {
       '  click C "javascript:alert(1)"',
       '  click D "//tracking.invalid/pixel"',
     ].join("\n");
+    const wide = "flowchart LR\n  Draft --> Review --> Publish";
     const kept = [
       "%%{init: {'theme': 'dark', 'themeCSS': '.node rect { fill: url(https://tracking.invalid/pixel) }'}}%%\nflowchart TD\n  A --> B",
       "flowchart TD\n  A[Styled]\n  style A fill:url(https://tracking.invalid/pixel)",
       'flowchart TD\n  A@{ img: "https://tracking.invalid/pixel.png", label: "Pixel" }',
+      'flowchart TD\n  A[<img src="https://tracking.invalid/error.png" onerror="alert(1)">] --> B[[[',
     ];
-    const source = ["# Static diagrams", drawn, ...kept].map((value, index) => index === 0 ? value : `\`\`\`mermaid\n${value}\n\`\`\``).join("\n\n");
+    const source = ["# Static diagrams", drawn, wide, ...kept].map((value, index) => index === 0 ? value : `\`\`\`mermaid\n${value}\n\`\`\``).join("\n\n");
     const requested: string[] = [];
     fixture.page.on("request", (request) => { if (request.url().includes("tracking.invalid")) requested.push(request.url()); });
     try {
@@ -234,13 +236,18 @@ test.describe("Markdown review", () => {
       await fixture.page.goto(`${fixture.server.baseUrl}/review?project=prj_default&artifact=${published.body.artifact.id}&version=${published.body.version.id}`);
       const review = fixture.page.frameLocator(".as-artifact-frame");
       const preview = review.frameLocator("iframe");
-      await expect(preview.locator('.md-mermaid[data-diagram-state="rendered"]')).toHaveCount(1);
+      await expect(preview.locator('.md-mermaid[data-diagram-state="rendered"]')).toHaveCount(2);
       await expect(preview.locator('.md-mermaid[data-diagram-state="unavailable"] .md-diagram-source code')).toHaveText(kept);
       const statuses = preview.locator('.md-mermaid[data-diagram-state="unavailable"] .md-diagram-status');
       await expect(statuses.nth(0)).toContainText("diagram settings");
       await expect(statuses.nth(1)).toContainText("syntax error on line 3");
       await expect(statuses.nth(2)).toContainText("diagrams that load images");
-      const diagram = preview.locator('.md-mermaid[data-diagram-state="rendered"] svg');
+      // Pele's error snippet quotes the author's markup; it must stay text.
+      await expect(statuses.nth(3)).toContainText("syntax error on line 2");
+      // (Pele's preprocessing quotes the attributes with ' in its snippet.)
+      await expect(preview.locator(".md-diagram-error").last()).toContainText(/A\[<img src=["']https:\/\/tracking\.invalid\/error\.png["'] onerror=/u);
+      await expect(preview.locator(".md-mermaid img")).toHaveCount(0);
+      const diagram = preview.locator('.md-mermaid[data-diagram-state="rendered"] svg').first();
       // Only the https link survives, and it opens like a Markdown link.
       await expect(diagram.locator("a")).toHaveCount(1);
       await expect(diagram.locator("a")).toHaveAttribute("href", "https://example.invalid/docs");
@@ -250,6 +257,13 @@ test.describe("Markdown review", () => {
       await expect(diagram.locator('.pele-node[data-id="A"] rect')).toHaveCSS("fill", "rgb(253, 230, 138)");
       await expect(diagram).toContainText("Network");
       await expect(preview.locator("svg image, svg foreignObject, svg script")).toHaveCount(0);
+      // A narrower figure redraws the layout: the wide flowchart turns vertical.
+      const flow = preview.locator('.md-mermaid[data-diagram-state="rendered"] svg').nth(1);
+      const aspect = async (): Promise<number> => Number(await flow.getAttribute("height")) / Number(await flow.getAttribute("width"));
+      await expect.poll(aspect).toBeLessThan(1);
+      await fixture.page.setViewportSize({width: 390, height: 844});
+      await expect.poll(aspect).toBeGreaterThan(1);
+      await expect(preview.locator(".md-mermaid").nth(1).locator("details")).toContainText("Diagram source");
       expect(requested).toEqual([]);
       await expect(review.locator("iframe")).toHaveAttribute("sandbox", "allow-scripts");
     } finally {
