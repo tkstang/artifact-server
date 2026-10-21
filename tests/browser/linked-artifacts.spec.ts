@@ -210,10 +210,10 @@ test.describe("Linked artifacts", () => {
       // The capture is in the artifact's own attributed history.
       await fixture.page.getByRole("tab", {name: "Activity"}).click();
       await expect(
-        fixture.page.getByText("Captured linked file", {exact: true}),
+        fixture.page.getByText("Captured the linked file as version 2", {exact: true}),
       ).toBeVisible();
       await expect(
-        fixture.page.getByText("Linked source file", {exact: true}),
+        fixture.page.getByText("Linked a source file", {exact: true}),
       ).toBeVisible();
 
       // Reviewing the current version offers the live file beside the captured

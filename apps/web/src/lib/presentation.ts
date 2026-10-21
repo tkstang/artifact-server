@@ -79,37 +79,46 @@ export function accessSettingLabel(value: "account_required" | "public_link"): s
   return value === "account_required" ? "Account required" : "Public link";
 }
 
-/** Converts one action kind into compact action-history text. */
-export function actionLabel(value: ArtifactAction["action"]): string {
+/**
+ * Says what one recorded action did, in plain words. A version number names
+ * the version a publish, restore or capture produced, when it is known.
+ */
+export function actionLabel(
+  value: ArtifactAction["action"],
+  versionNumber: number | null = null,
+): string {
+  const version = versionNumber === null ? "a version" : `version ${versionNumber}`;
   switch (value) {
     case "capture":
-      return "Captured linked file";
+      return versionNumber === null
+        ? "Captured the linked file"
+        : `Captured the linked file as version ${versionNumber}`;
     case "link":
-      return "Linked source file";
+      return "Linked a source file";
     case "relink":
-      return "Relinked source file";
+      return "Relinked the source file";
     case "change_access":
-      return "Changed access";
+      return "Changed who can open it";
     case "change_tags":
-      return "Replaced tags";
+      return "Changed tags";
     case "comment_create":
-      return "Opened comment";
+      return "Added a comment";
     case "comment_delete":
-      return "Deleted comment";
+      return "Deleted a comment";
     case "comment_reopen":
-      return "Reopened comment";
+      return "Reopened a comment";
     case "comment_reply":
-      return "Replied to comment";
+      return "Replied to a comment";
     case "comment_resolve":
-      return "Resolved comment";
+      return "Resolved a comment";
     case "comment_update":
-      return "Edited comment";
+      return "Edited a comment";
     case "delete":
-      return "Tombstoned artifact";
+      return "Deleted the artifact";
     case "publish":
-      return "Published version";
+      return `Published ${version}`;
     case "restore":
-      return "Restored version";
+      return `Made ${version} current`;
   }
   return actionHandled(value);
 }

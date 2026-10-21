@@ -481,3 +481,23 @@ body {
   margin: 0;
   padding: 0 0.6rem 0.5rem;
 }
+
+/* Activity: a plain sentence, then when and by whom. */
+.as-activity-list strong {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.as-activity-list__meta {
+  align-items: baseline;
+  color: var(--as-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  gap: 0.2rem 0.6rem;
+}
+
+.as-activity-list__meta code {
+  font-family: var(--as-mono-font);
+  font-size: 0.6875rem;
+}

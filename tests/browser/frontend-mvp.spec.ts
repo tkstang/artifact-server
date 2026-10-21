@@ -1456,8 +1456,9 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(fixture.page.getByText("current", {exact: true})).toBeVisible();
 
       await fixture.page.getByRole("tab", {name: "Activity"}).click();
-      await expect(fixture.page.getByText("Restored version")).toBeVisible();
-      await expect(fixture.page.getByText("Replaced tags").first()).toBeVisible();
+      // Activity says what happened in plain words, with the version it made current.
+      await expect(fixture.page.getByText("Made version 1 current")).toBeVisible();
+      await expect(fixture.page.getByText("Changed tags").first()).toBeVisible();
       await expect(fixture.page.getByRole("button", {name: "Load more"})).toBeVisible();
       await expect(fixture.page.locator(".as-activity-list > li")).toHaveCount(50);
       await fixture.page.getByRole("button", {name: "Load more"}).click();

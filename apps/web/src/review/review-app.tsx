@@ -2226,6 +2226,7 @@ function ArtifactReview({
             ) : inspectorTab === "activity" ? (
               <ActivityInspector
                 actions={actions}
+                versions={versions}
                 error={activityError}
                 loading={activityLoading}
                 nextCursor={actionNextCursor}
@@ -2711,25 +2712,31 @@ function ActivityInspector({
   loading,
   nextCursor,
   onLoadMore,
+  versions,
 }: {
   readonly actions: readonly ArtifactAction[];
   readonly error: Error | null;
   readonly loading: boolean;
   readonly nextCursor: string | null;
   readonly onLoadMore: () => void;
+  readonly versions: readonly VersionListItem[];
 }) {
+  const versionNumbers = new Map(versions.map(({version}) => [version.id, version.number]));
   return (
     <div className="as-inspector-stack">
-      <InspectorSection count={actions.length} title="Artifact activity">
+      <InspectorSection count={actions.length} title="Activity">
         {error === null ? null : <p className="as-inspector-error" role="alert">{error.message}</p>}
         {actions.length === 0 && loading ? <p className="as-inspector-empty">Loading activity…</p> : null}
         {actions.length === 0 && !loading ? <p className="as-inspector-empty">No activity recorded.</p> : null}
         <ol className="as-activity-list">
           {actions.map((action) => (
             <li key={action.id}>
-              <strong>{actionLabel(action.action)}</strong>
-              <time dateTime={action.createdAt}>{formatTimestamp(action.createdAt)}</time>
-              <code title={action.principalId}>{compactId(action.principalId)}</code>
+              <strong>{actionLabel(action.action, versionNumbers.get(action.versionId) ?? null)}</strong>
+              <span className="as-activity-list__meta">
+                <time dateTime={action.createdAt}>{formatTimestamp(action.createdAt)}</time>
+                {/* Names are not available to the client; the actor stays a short ID. */}
+                <span>by <code title={action.principalId}>{compactId(action.principalId)}</code></span>
+              </span>
             </li>
           ))}
         </ol>
