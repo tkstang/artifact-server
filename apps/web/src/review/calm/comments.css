@@ -370,3 +370,11 @@
   background: var(--as-hover);
   border-color: transparent;
 }
+
+/* The sidebar composer rests as one line and opens when focused. */
+.as-comments .as-comment-composer[data-collapsed="true"] .as-comment-composer__input {
+  height: 2.5rem;
+  min-height: 2.5rem;
+  overflow: hidden;
+  resize: none;
+}

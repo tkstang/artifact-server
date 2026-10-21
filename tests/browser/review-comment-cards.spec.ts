@@ -67,7 +67,8 @@ test.describe("Artifact Server Review comment cards", () => {
       await expect(page.locator(".as-comments__error")).toBeVisible();
       expect((await listThreadsOverApi(fixture, artifactId)).length).toBe(1);
 
-      await post.click();
+      // Retry from the keyboard: Cmd/Ctrl+Enter submits like the button.
+      await page.getByLabel("Add a comment").press("Control+Enter");
       const card = page.locator(".as-comment-card").filter({hasText: "Only once, please."});
       await expect(card).toHaveCount(1);
       await expect(page.getByLabel("Add a comment")).toHaveValue("");

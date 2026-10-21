@@ -503,6 +503,7 @@ function NewThreadComposer({
     <div data-new-thread-composer>
       <CommentComposer
         cancelLabel={null}
+        collapsible
         draftRestored={draft.restored}
         initialBody={draft.initialBody}
         inputId={`review-new-thread-${versionId}`}
@@ -517,6 +518,7 @@ function NewThreadComposer({
           if (saved) draft.onPosted();
           return saved;
         }}
+        placeholder="Comment on the whole document…"
         submitLabel="Post comment"
       />
     </div>
@@ -585,6 +587,7 @@ function ReplyComposer({
           }
           return saved;
         }}
+        placeholder="Add a reply…"
         submitLabel="Post reply"
       />
     </div>

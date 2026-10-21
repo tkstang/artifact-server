@@ -10,9 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
  * One mounted composer is one compose attempt: its idempotency key is minted
  * on the first submission and reused for every retry until the server accepts
  * the text, so a retried create can never duplicate a comment.
+ *
+ * Every composer speaks the same way: an "Add a comment…" style prompt and
+ * Cmd/Ctrl+Enter to submit. A collapsible one rests as a one-line field and
+ * opens on focus, so it does not push the conversation below the fold.
  */
 export function CommentComposer({
   cancelLabel,
+  collapsible = false,
   draftRestored = false,
   initialBody,
   inputId,
@@ -22,9 +27,12 @@ export function CommentComposer({
   onCancel,
   onDiscardDraft,
   onSubmit,
+  placeholder = "Add a comment…",
   submitLabel,
 }: {
   readonly cancelLabel: string | null;
+  /** Rest as a one-line field until focused or holding text. */
+  readonly collapsible?: boolean;
   /** True when `initialBody` came out of the draft store, not the caller. */
   readonly draftRestored?: boolean;
   readonly initialBody: string;
@@ -36,13 +44,16 @@ export function CommentComposer({
   readonly onCancel: (() => void) | null;
   readonly onDiscardDraft?: () => void;
   readonly onSubmit: (body: string, idempotencyKey: string) => Promise<boolean>;
+  readonly placeholder?: string;
   readonly submitLabel: string;
 }) {
   const [body, setBody] = useState(initialBody);
   const [pending, setPending] = useState(false);
+  const [focused, setFocused] = useState(false);
   const attemptKey = useRef<string | null>(null);
   const trimmed = body.trim();
   const tooLong = trimmed.length > maximumCharacters;
+  const collapsed = collapsible && !focused && !pending && body === "";
 
   const submit = async () => {
     if (trimmed === "" || tooLong) return;
@@ -62,7 +73,10 @@ export function CommentComposer({
   };
 
   return (
-    <div className="as-comment-composer grid gap-2">
+    <div
+      className="as-comment-composer grid gap-2"
+      data-collapsed={collapsible ? String(collapsed) : undefined}
+    >
       <div className="as-comment-composer__header flex items-baseline justify-between gap-2">
         <Label className="as-comment-composer__label" htmlFor={inputId}>
           {label}
@@ -89,12 +103,21 @@ export function CommentComposer({
         aria-invalid={tooLong}
         className="as-comment-composer__input"
         disabled={pending}
+        aria-keyshortcuts="Meta+Enter Control+Enter"
         id={inputId}
+        onBlur={() => setFocused(false)}
         onChange={(event) => {
           setBody(event.currentTarget.value);
           onBodyChange?.(event.currentTarget.value);
         }}
-        placeholder="Describe what should change and why."
+        onFocus={() => setFocused(true)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
+          event.preventDefault();
+          void submit();
+        }}
+        placeholder={placeholder}
+        rows={collapsed ? 1 : undefined}
         value={body}
       />
       {tooLong
@@ -106,29 +129,31 @@ export function CommentComposer({
           </p>
         )
         : null}
-      <div className="as-comment-composer__actions flex flex-wrap gap-2">
-        <Button
-          disabled={pending || trimmed === "" || tooLong}
-          onClick={() => void submit()}
-          size="xs"
-          type="button"
-        >
-          {pending ? "Saving…" : submitLabel}
-        </Button>
-        {onCancel === null || cancelLabel === null
-          ? null
-          : (
-            <Button
-              disabled={pending}
-              onClick={onCancel}
-              size="xs"
-              type="button"
-              variant="ghost"
-            >
-              {cancelLabel}
-            </Button>
-          )}
-      </div>
+      {collapsed ? null : (
+        <div className="as-comment-composer__actions flex flex-wrap gap-2">
+          <Button
+            disabled={pending || trimmed === "" || tooLong}
+            onClick={() => void submit()}
+            size="xs"
+            type="button"
+          >
+            {pending ? "Saving…" : submitLabel}
+          </Button>
+          {onCancel === null || cancelLabel === null
+            ? null
+            : (
+              <Button
+                disabled={pending}
+                onClick={onCancel}
+                size="xs"
+                type="button"
+                variant="ghost"
+              >
+                {cancelLabel}
+              </Button>
+            )}
+        </div>
+      )}
     </div>
   );
 }

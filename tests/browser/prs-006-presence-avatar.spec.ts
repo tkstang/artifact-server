@@ -108,16 +108,18 @@ test.describe("PRS-006 presence avatar", () => {
 
       // The primary compose action reads as a real input at rest: its label
       // names the action plainly and the writing surface stays visibly
-      // bounded before focus instead of disappearing into the inspector.
+      // bounded before focus instead of disappearing into the inspector. It
+      // rests as one line and opens when focused.
       const newCommentInput = page.getByLabel("Add a comment");
       await expect(newCommentInput).toBeVisible();
-      expect(await newCommentInput.evaluate((element) => {
-        const style = getComputedStyle(element);
-        return {
-          borderWidth: style.borderTopWidth,
-          height: element.getBoundingClientRect().height,
-        };
-      })).toEqual({borderWidth: "1px", height: 80});
+      const composerBox = () => newCommentInput.evaluate((element) => ({
+        borderWidth: getComputedStyle(element).borderTopWidth,
+        height: element.getBoundingClientRect().height,
+      }));
+      expect(await composerBox()).toEqual({borderWidth: "1px", height: 40});
+      await newCommentInput.focus();
+      await expect.poll(async () => (await composerBox()).height).toBe(80);
+      await newCommentInput.blur();
 
       // Idle: the primary send-all control carries the agent's avatar — the
       // Pi brand mark in a circle whose solid ring is the state, not a bare
