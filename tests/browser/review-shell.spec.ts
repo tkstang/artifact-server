@@ -329,4 +329,30 @@ test.describe("Review shell", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("CMT-015-F: an overlaying panel sits over a scrim and closes on an outside click", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await localLogin(fixture);
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const inspector = fixture.page.getByRole("complementary", {name: "Artifact inspector"});
+      const scrim = fixture.page.locator(".as-overlay-scrim[data-panel='inspector']");
+      await expect(inspector).toBeVisible();
+      // Docked beside the artifact, the inspector needs no scrim.
+      await expect(scrim).toBeHidden();
+
+      await fixture.page.setViewportSize({height: 768, width: 1024});
+      await expect(scrim).toBeVisible();
+      const previewWidth = (await fixture.page.locator(".as-preview-panel").boundingBox())?.width ?? 0;
+      expect(previewWidth).toBeGreaterThan(600);
+      // Over the artifact, outside the panel (the catalog stays docked at this width).
+      await fixture.page.mouse.click(480, 400);
+      await expect(inspector).toBeHidden();
+      await expect(scrim).toHaveCount(0);
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });

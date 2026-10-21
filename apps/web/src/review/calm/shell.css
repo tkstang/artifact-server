@@ -501,3 +501,43 @@ body {
   font-family: var(--as-mono-font);
   font-size: 0.6875rem;
 }
+
+/* Where a panel overlays the artifact, an unblurred scrim sits behind it and
+   a click outside closes it; docked panels never show one. */
+.as-overlay-scrim {
+  display: none;
+}
+
+@keyframes as-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  .as-overlay-scrim[data-panel="inspector"] {
+    animation: as-scrim-in 160ms ease;
+    background: var(--as-scrim);
+    display: block;
+    inset: 0;
+    position: absolute;
+    z-index: 10;
+  }
+}
+
+@media (max-width: 720px) {
+  .as-overlay-scrim[data-panel="catalog"] {
+    animation: as-scrim-in 160ms ease;
+    background: var(--as-scrim);
+    display: block;
+    inset: 0;
+    position: fixed;
+    z-index: 11;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .as-overlay-scrim {
+    animation: none;
+  }
+}

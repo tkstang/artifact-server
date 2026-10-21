@@ -1517,6 +1517,16 @@ function ArtifactReview({
         </Dialog.Portal>
       </Dialog.Root>
 
+      {!focusMode && catalogOpen ? (
+        // Shown only where the catalog overlays the artifact (review.css and
+        // calm/shell.css keep the breakpoint); a click outside closes it.
+        <div
+          aria-hidden="true"
+          className="as-overlay-scrim"
+          data-panel="catalog"
+          onClick={() => setCatalogOpen(false)}
+        />
+      ) : null}
       {!focusMode && catalogMotion.mounted ? (
         <div className="as-panel-assembly" data-side="left">
           <motion.div
@@ -2107,6 +2117,14 @@ function ArtifactReview({
           </footer>
         </section>
 
+        {!focusMode && inspectorOpen ? (
+          <div
+            aria-hidden="true"
+            className="as-overlay-scrim"
+            data-panel="inspector"
+            onClick={() => setInspectorOpen(false)}
+          />
+        ) : null}
         {!focusMode && inspectorMotion.mounted ? (
           <div className="as-panel-assembly" data-side="right">
             {inspectorOpen ? (
