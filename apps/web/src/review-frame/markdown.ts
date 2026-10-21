@@ -114,8 +114,12 @@ export async function renderMarkdown(
   // Trusted, self-contained runtime executes only in the viewer's opaque sandbox.
   const mermaidBundle = hasMermaid ? (await import("@mermaid-js/tiny/dist/mermaid.tiny.js?raw")).default : "";
   const diagramScript = hasMermaid ? `<script>${mermaidBundle.replace(/<\/script/giu, "<\\/script")}\n(${runMermaid.toString()})();</script>` : "";
+  // The outline is viewer navigation, not document content. Pointer events
+  // inside it stop before the annotation bridge sees them, so Contents and
+  // its links work in annotate mode (the default).
   const navigation = headings.length < 2 ? "" : `<nav class="md-outline" aria-label="Document sections"><details><summary>Contents</summary><ol>${headings.map((heading) => `<li class="md-toc-level-${heading.level}"><a href="#${heading.id}">${escape(heading.title)}</a></li>`).join("")}</ol></details></nav>`;
-  return `<!doctype html><html lang="en"><head><base href="about:srcdoc"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="plannotator-theme" content="host"><title>Markdown review</title><style>${markdownStyles}</style></head><body><div class="md-layout">${navigation}<main class="md-document">${parser.renderer.render(tokens, parser.options, {})}</main></div>${diagramScript}</body></html>`;
+  const outlineScript = navigation === "" ? "" : `<script>(${isolateOutline.toString()})();</script>`;
+  return `<!doctype html><html lang="en"><head><base href="about:srcdoc"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="plannotator-theme" content="host"><title>Markdown review</title><style>${markdownStyles}</style></head><body><div class="md-layout">${navigation}<main class="md-document">${parser.renderer.render(tokens, parser.options, {})}</main></div>${outlineScript}${diagramScript}</body></html>`;
 }
 
 /** Block ranges are exact; rendered selections can omit Markdown punctuation. */
@@ -144,4 +148,18 @@ export function withMarkdownSource(anchor: ReviewAnchor | null, html: string, so
       truncated: sourceText.length > 2_000,
     },
   };
+}
+
+/** Runs inside the rendered document: keeps outline pointer input away from annotation. */
+function isolateOutline(): void {
+  // The bridge listens on document in the capture phase, so the outline's
+  // events stop at window capture, before it; default actions still run.
+  // Self-contained: this function is serialised into the document.
+  for (const type of ["click", "mousedown", "mouseup", "mousemove"]) {
+    window.addEventListener(type, (event) => {
+      if (event.target instanceof Element && event.target.closest(".md-outline") !== null) {
+        event.stopPropagation();
+      }
+    }, true);
+  }
 }

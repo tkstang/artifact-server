@@ -84,7 +84,10 @@ test.describe("Markdown review", () => {
       await expect(preview.getByRole("img", {name: "Local diagram"})).toHaveJSProperty("naturalWidth", 1);
       await expect(preview.getByText("Published together with the saved source.", {exact: true})).toBeVisible();
       await expect(preview.locator("body")).toContainText('<script>window.parent.document.title = "COMPROMISED"</script>');
-      await expect(preview.locator("script")).toHaveCount(1); // only the trusted annotation bridge
+      // Only trusted scripts run: the annotation bridge and the outline's
+      // pointer isolation. Author-supplied script stays inert text.
+      await expect(preview.locator("script")).toHaveCount(2);
+      await expect(preview.locator("script", {hasText: "COMPROMISED"})).toHaveCount(0);
       await expect(preview.locator('a[href^="javascript:"]')).toHaveCount(0);
       await expect(preview.locator(".md-image-unavailable")).toHaveCount(2);
 
@@ -125,8 +128,9 @@ test.describe("Markdown review", () => {
       await fixture.page.setViewportSize({width: 390, height: 844});
       await fixture.page.goto(`${url}&view=focus`);
       await expect(preview.getByRole("heading", {name: "Release plan"})).toBeVisible();
-      await fixture.page.getByRole("button", {name: "Annotate mode", exact: true}).click();
+      // The generated outline is navigation even in annotate mode (the default).
       await preview.getByText("Contents", {exact: true}).click();
+      await expect(review.locator('[data-comment-popover="true"]')).toHaveCount(0);
       await preview.getByRole("navigation", {name: "Document sections"}).getByRole("link", {name: "Delivery", exact: true}).click();
       await expect(preview.getByRole("heading", {name: "Delivery", exact: true})).toBeVisible();
       await preview.getByRole("heading", {name: "Release plan"}).scrollIntoViewIfNeeded();
