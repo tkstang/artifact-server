@@ -92,6 +92,10 @@ const inspectorMinimumWidth = 240;
 const inspectorMaximumWidth = 480;
 const inspectorGapPixels = 12;
 const catalogRefreshConfirmationMilliseconds = 1_600;
+// Below these widths the panel overlays the artifact instead of sitting beside it
+// (review.css keeps the matching media queries).
+const catalogOverlayQuery = "(max-width: 720px)";
+const inspectorOverlayQuery = "(max-width: 1180px)";
 
 function reviewShortcutBlocked(event: KeyboardEvent): boolean {
   if (
@@ -557,7 +561,7 @@ function ArtifactReview({
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<Error | null>(null);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("details");
-  const [catalogOpen, setCatalogOpen] = useState(true);
+  const [catalogOpen, setCatalogOpen] = useState(() => readInitialCatalogOpen(initialLocation));
   const [inspectorOpen, setInspectorOpen] = useState(readInitialInspectorOpen);
   const [opening, setOpening] = useState(false);
   const [focusMode, setFocusMode] = useState(initialLocation.view === "focus");
@@ -2748,8 +2752,13 @@ export function initialReviewTheme(): ReviewTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "moon" : "dawn";
 }
 
+/** A link that names an artifact opens on the document where the catalog would cover it. */
+function readInitialCatalogOpen(location: ReviewLocation): boolean {
+  return location.artifactId === null || !window.matchMedia(catalogOverlayQuery).matches;
+}
+
 function readInitialInspectorOpen(): boolean {
-  return window.matchMedia("(min-width: 1181px)").matches;
+  return !window.matchMedia(inspectorOverlayQuery).matches;
 }
 
 function readReviewLocation(): ReviewLocation {
