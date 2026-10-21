@@ -6,7 +6,7 @@ import {
   api,
   type ArtifactVersion,
 } from "@/api/client";
-import {formatBytes} from "@/lib/presentation";
+import {failureMessage, formatBytes} from "@/lib/presentation";
 import {
   frameMessageSchema,
   reviewProtocolVersion,
@@ -51,6 +51,7 @@ export function ReviewPreview({
   opening,
   projectId,
   readOnly,
+  retryToken,
   selectedThreadId,
   selectedPath,
   version,
@@ -72,6 +73,8 @@ export function ReviewPreview({
   readonly opening: boolean;
   readonly projectId: string;
   readonly readOnly: boolean;
+  /** Changes when the reader asks to reload; a failed preview tries again. */
+  readonly retryToken: number;
   readonly selectedThreadId: string | null;
   readonly selectedPath: string | null;
   readonly version: ArtifactVersion | null;
@@ -79,7 +82,7 @@ export function ReviewPreview({
   if (version === null) {
     return (
       <PreviewState
-        description="Reading the selected immutable version."
+        description="Reading this version."
         title="Loading preview"
       />
     );
@@ -99,7 +102,7 @@ export function ReviewPreview({
     return (
       <TerminalPreviewState
         actions={commonActions}
-        description="This path is not part of the selected immutable version."
+        description="This file is not part of this version."
         mediaType="unknown"
         path={path}
         size={null}
@@ -126,6 +129,7 @@ export function ReviewPreview({
         onUnanchoredChange={onUnanchoredChange}
         projectId={projectId}
         readOnly={readOnly}
+        retryToken={retryToken}
         selectedThreadId={selectedThreadId}
         version={version}
       />
@@ -139,6 +143,7 @@ export function ReviewPreview({
         entry={entry}
         key={identity}
         kind="image"
+        retryToken={retryToken}
         onProbe={() => api.probeVersionMedia(
           projectId,
           artifactId,
@@ -162,6 +167,7 @@ export function ReviewPreview({
         entry={entry}
         key={identity}
         kind="video"
+        retryToken={retryToken}
         onProbe={() => api.probeVersionMedia(
           projectId,
           artifactId,
@@ -180,7 +186,7 @@ export function ReviewPreview({
   return (
     <TerminalPreviewState
       actions={commonActions}
-      description="Artifact Server does not preview this declared media type."
+      description="This kind of file cannot be previewed here. Open it raw or download it."
       mediaType={entry.mediaType}
       path={entry.path}
       size={entry.size}
@@ -203,6 +209,7 @@ function HtmlPreview({
   onUnanchoredChange,
   projectId,
   readOnly,
+  retryToken,
   selectedThreadId,
   version,
 }: {
@@ -223,15 +230,23 @@ function HtmlPreview({
   readonly onUnanchoredChange: (threadIds: readonly string[]) => void;
   readonly projectId: string;
   readonly readOnly: boolean;
+  readonly retryToken: number;
   readonly selectedThreadId: string | null;
   readonly version: ArtifactVersion;
 }) {
+  const [attempt, setAttempt] = useState(0);
   const [previewDocument, setPreviewDocument] = useState<PreviewDocument | null>(null);
   const [frameReady, setFrameReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const initialisedRef = useRef(false);
+  const retry = useCallback((): void => {
+    setError(null);
+    setLoading(true);
+    setAttempt((current) => current + 1);
+  }, []);
+  useRetryOnReload(retryToken, error !== null, retry);
 
   const postToFrame = useCallback((message: HostMessage): void => {
     const frame = frameRef.current?.contentWindow;
@@ -281,7 +296,7 @@ function HtmlPreview({
     return () => {
       current = false;
     };
-  }, [artifactId, entry.path, markdown, projectId, version.manifest.entries, version.version.id]);
+  }, [artifactId, attempt, entry.path, markdown, projectId, version.manifest.entries, version.version.id]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<unknown>): void => {
@@ -393,7 +408,7 @@ function HtmlPreview({
   if (loading) {
     return (
       <PreviewState
-        description={`Reading ${entry.path} from the selected version.`}
+        description={`Reading ${entry.path}.`}
         title="Loading preview"
       />
     );
@@ -402,8 +417,9 @@ function HtmlPreview({
     return (
       <TerminalPreviewState
         actions={actions}
-        description={error.message}
+        description={failureMessage(error)}
         mediaType={entry.mediaType}
+        onRetry={retry}
         path={entry.path}
         size={entry.size}
         title="Preview unavailable"
@@ -434,6 +450,7 @@ function NativeMediaPreview({
   entry,
   kind,
   onProbe,
+  retryToken,
   source,
 }: {
   readonly actions: PreviewActions;
@@ -441,10 +458,16 @@ function NativeMediaPreview({
   readonly entry: PreviewEntry;
   readonly kind: "image" | "video";
   readonly onProbe: () => Promise<void>;
+  readonly retryToken: number;
   readonly source: string;
 }) {
   const [status, setStatus] = useState<"error" | "loading" | "ready">("loading");
   const [retry, setRetry] = useState(0);
+  const retryMedia = useCallback((): void => {
+    setRetry((current) => current + 1);
+    setStatus("loading");
+  }, []);
+  useRetryOnReload(retryToken, status === "error", retryMedia);
   const mountedRef = useRef(true);
   const probeInFlightRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -481,10 +504,7 @@ function NativeMediaPreview({
         actions={actions}
         description={`This browser could not decode or deliver the declared ${entry.mediaType} file.`}
         mediaType={entry.mediaType}
-        onRetry={() => {
-          setRetry((current) => current + 1);
-          setStatus("loading");
-        }}
+        onRetry={retryMedia}
         path={entry.path}
         size={entry.size}
         title={`${kind === "image" ? "Image" : "Video"} preview unavailable`}
@@ -526,6 +546,16 @@ function NativeMediaPreview({
   );
 }
 
+/** Retry a failed preview when the reader's reload token changes; a healthy one is left alone. */
+function useRetryOnReload(retryToken: number, failed: boolean, retry: () => void): void {
+  const seenTokenRef = useRef(retryToken);
+  useEffect(() => {
+    if (seenTokenRef.current === retryToken) return;
+    seenTokenRef.current = retryToken;
+    if (failed) retry();
+  }, [failed, retry, retryToken]);
+}
+
 function mediaTypeEssence(mediaType: string): string {
   return mediaType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 }
@@ -534,8 +564,11 @@ function reviewThemeTokens() {
   const style = getComputedStyle(document.documentElement);
   const value = (name: string): string => style.getPropertyValue(name).trim();
   return {
-    "--accent": value("--as-surface-raised"),
-    "--accent-foreground": value("--as-text"),
+    // The annotation package draws comment markers, highlight underlines and
+    // its accent hovers from --accent; it must be a visible comment colour
+    // with a white numeral on it, in both themes.
+    "--accent": value("--as-annotation-marker"),
+    "--accent-foreground": "#ffffff",
     "--background": value("--as-surface"),
     "--border": value("--as-border"),
     "--card": value("--as-surface"),
@@ -586,7 +619,7 @@ function TerminalPreviewState({
     <div className="as-preview-state as-preview-state--terminal" data-tone="error" role="alert">
       <span aria-hidden="true" className="as-preview-state__mark" />
       <h3>{title}</h3>
-      <p>{description}</p>
+      <p className="as-notice">{description}</p>
       <dl className="as-preview-state__details">
         <div><dt>Path</dt><dd><code>{path}</code></dd></div>
         <div><dt>Type</dt><dd><code>{mediaType}</code></dd></div>

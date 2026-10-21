@@ -1,0 +1,511 @@
+/* Calm settings surface rules; see foundation.css for the shared voice and primitives. */
+
+/* WebMCP: whether the browser provides it, beside the stored preference. */
+.as-settings__webmcp-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.as-settings__webmcp-status {
+  align-items: center;
+  color: var(--as-text);
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.as-settings__webmcp-status > span {
+  background: var(--as-muted);
+  border-radius: 999px;
+  height: 0.5rem;
+  width: 0.5rem;
+}
+
+.as-settings__webmcp-status[data-available="true"] > span {
+  background: var(--as-iris);
+}
+
+.as-settings__webmcp {
+  border-color: var(--as-border-strong);
+  border-radius: var(--as-radius);
+}
+
+.as-settings__webmcp strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.as-settings__webmcp small {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.as-settings__webmcp-note {
+  color: var(--as-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/*
+ * Share: the exact review link leads with one primary copy and who can
+ * open it; Latest, Raw and the agent prompt sit behind "More ways to share".
+ * Labels are sans, URLs and commands mono; secondary links stack instead of
+ * using a fixed label column.
+ */
+.as-share-popover__header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.as-share-popover__header p {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-share-destination__icon {
+  border-radius: var(--as-radius);
+}
+
+.as-share-overview,
+.as-share-access-editor,
+.as-share-agent-setup {
+  padding: 1rem;
+}
+
+.as-share-link h3,
+.as-share-agent h3,
+.as-share-secondary > h3 {
+  color: var(--as-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.as-share-link > div {
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.as-share-link code,
+.as-share-agent-value code {
+  background: var(--as-surface-raised);
+  border-color: var(--as-border);
+  border-radius: var(--as-radius);
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.as-share-link .as-button--primary {
+  min-height: 2.25rem;
+}
+
+.as-share-access-summary {
+  color: var(--as-muted);
+  margin-top: 0.75rem;
+}
+
+.as-share-access-summary p,
+.as-share-message,
+.as-share-agent > p,
+.as-share-agent-setup > p,
+.as-share-agent-setup section > p,
+.as-share-access-editor > p:first-child,
+.as-share-network-note,
+.as-share-access-warning {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.as-share-access-summary .as-button,
+.as-share-access-editor__actions .as-button {
+  font-size: 0.8125rem;
+  min-height: 2rem;
+}
+
+.as-share-message {
+  border-radius: var(--as-radius);
+}
+
+.as-share-more {
+  border-top: 1px solid var(--as-border);
+  margin-top: 0.85rem;
+  padding-top: 0.35rem;
+}
+
+.as-share-more__toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--as-radius);
+  color: var(--as-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  gap: 0.35rem;
+  margin-left: -0.4rem;
+  min-height: 2rem;
+  padding: 0 0.4rem;
+}
+
+.as-share-more__toggle:hover {
+  background: var(--as-hover);
+}
+
+.as-share-more__toggle svg {
+  color: var(--as-muted);
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+.as-share-secondary {
+  border-top: 0;
+  margin-top: 0.35rem;
+  padding-top: 0;
+}
+
+.as-share-secondary > h3 {
+  margin: 0 0 0.25rem;
+}
+
+.as-share-secondary__row {
+  gap: 0.15rem 0.5rem;
+  grid-template-areas:
+    "label label"
+    "value copy";
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.4rem 0;
+}
+
+.as-share-secondary__row > span {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  grid-area: label;
+}
+
+.as-share-secondary__row strong {
+  font-size: 0.8125rem;
+}
+
+.as-share-secondary__row small {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-share-secondary__row code {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  grid-area: value;
+}
+
+.as-share-secondary__row .as-icon-button {
+  grid-area: copy;
+}
+
+.as-share-agent {
+  margin-top: 0.6rem;
+}
+
+.as-share-agent__actions {
+  flex-wrap: wrap;
+}
+
+.as-share-agent__prompt,
+.as-share-agent__setup,
+.as-share-agent-value button {
+  background: var(--as-surface);
+  border-color: var(--as-border-strong);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.as-share-agent__prompt,
+.as-share-agent__setup {
+  border-radius: var(--as-radius);
+  min-height: 2.25rem;
+}
+
+.as-share-agent-value button {
+  border-radius: 0 var(--as-radius) var(--as-radius) 0;
+}
+
+.as-share-agent-value code {
+  border-radius: var(--as-radius) 0 0 var(--as-radius);
+  color: var(--as-text);
+}
+
+.as-share-agent-setup section > header strong {
+  font-size: 0.875rem;
+}
+
+.as-share-agent-setup section > header span {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-share-access-option {
+  border-radius: var(--as-radius-lg);
+}
+
+.as-share-access-option strong {
+  font-size: 0.875rem;
+}
+
+.as-share-access-option small {
+  color: var(--as-muted);
+  font-size: 0.8125rem;
+}
+
+.as-share-network-note,
+.as-share-access-warning {
+  border-radius: var(--as-radius);
+}
+
+.as-share-network-note {
+  color: var(--as-muted);
+}
+
+.as-share-popover__footer {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  padding: 0.65rem 1rem;
+}
+
+@media (max-width: 560px) {
+  .as-share-link > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * Settings pages: bordered panels become soft cards on the warm canvas,
+ * tables reflow into cards on narrow screens, and the navigation wraps so
+ * the active destination is always visible on a phone.
+ */
+.as-settings__content :is(section, article, div).border,
+.as-public-links-inventory,
+.as-settings-agents {
+  background: var(--as-surface);
+  border-color: var(--as-border);
+  border-radius: var(--as-radius-lg);
+}
+
+.as-settings__content .as-settings-copyable {
+  background: var(--as-surface-raised);
+  border-radius: var(--as-radius);
+  overflow: hidden;
+}
+
+body:has(.as-settings) .as-settings-copyable [data-slot="button"] {
+  align-self: stretch;
+  border-radius: 0;
+  height: auto;
+}
+
+.as-settings-notice[data-tone="danger"] {
+  background: color-mix(in oklab, var(--as-love) 8%, var(--as-surface));
+  border: 1px solid color-mix(in oklab, var(--as-love) 40%, var(--as-border));
+  border-radius: var(--as-radius);
+  color: var(--as-love);
+}
+
+/* Connected agents. */
+.as-settings-agents {
+  border: 1px solid var(--as-border);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.as-settings-agents__header {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.as-settings-agents__header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.as-settings-agents__header p,
+.as-settings-agents__empty p {
+  color: var(--as-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0.25rem 0 0;
+}
+
+.as-settings-agents__empty {
+  background: var(--as-surface-raised);
+  border-radius: var(--as-radius);
+  color: var(--as-muted);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 0.85rem 1rem;
+}
+
+.as-settings-agents__empty strong {
+  color: var(--as-text);
+  font-weight: 600;
+}
+
+.as-settings-agents__list {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.as-settings-agents__list > li {
+  align-items: center;
+  border-top: 1px solid var(--as-border);
+  display: grid;
+  gap: 0.25rem 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr);
+  padding: 0.7rem 0;
+}
+
+.as-settings-agents__list > li:first-child {
+  border-top: 0;
+}
+
+.as-settings-agents__identity {
+  display: grid;
+  min-width: 0;
+}
+
+.as-settings-agents__identity strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.as-settings-agents__identity span {
+  color: var(--as-muted);
+  font-size: 0.8125rem;
+}
+
+.as-settings-agents__list > li[data-connected="true"] .as-settings-agents__identity span {
+  color: var(--as-text);
+}
+
+.as-settings-agents__list code {
+  color: var(--as-muted);
+  font-family: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  min-width: 0;
+  overflow: hidden;
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .as-settings-agents__list > li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .as-settings-agents__list code {
+    grid-column: 2;
+    overflow-wrap: anywhere;
+    text-align: start;
+    white-space: normal;
+  }
+}
+
+/* Project and member tables reflow as cards, like Public links. */
+.as-settings-table {
+  container-name: settings-table;
+  container-type: inline-size;
+  min-width: 0;
+  overflow: hidden;
+}
+
+@container settings-table (max-width: 40rem) {
+  .as-settings-table table,
+  .as-settings-table tbody {
+    display: block;
+  }
+
+  .as-settings-table thead {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .as-settings-table tbody tr {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .as-settings-table tbody td {
+    padding: 0;
+  }
+
+  .as-settings-table td[data-cell="primary"] {
+    flex: 1 1 calc(100% - 9rem);
+    min-width: 0;
+  }
+
+  .as-settings-table td[data-cell="actions"] {
+    flex: 0 0 auto;
+    margin-left: auto;
+    order: 1;
+  }
+
+  .as-settings-table td[data-cell="meta"] {
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    order: 2;
+  }
+
+  .as-settings-table td[data-cell="actions-row"] {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  .as-settings-table td[data-cell="actions-row"] > div {
+    justify-content: flex-start;
+  }
+
+  .as-settings-table td[data-label]::before {
+    content: attr(data-label) " ";
+  }
+}
+
+/* Phone navigation wraps instead of scrolling the active page off-screen. */
+@media (max-width: 720px) {
+  .as-settings__nav {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .as-settings__nav > a {
+    border-bottom: 0;
+    border-radius: var(--as-radius);
+    font-size: 0.875rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .as-settings__nav > a[data-active="true"] {
+    background: var(--as-selected);
+    box-shadow: inset 0 -2px 0 var(--as-iris);
+    color: var(--as-text);
+    font-weight: 600;
+  }
+}

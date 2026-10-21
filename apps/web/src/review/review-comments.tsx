@@ -20,8 +20,14 @@ import {
   type CommentThreadDetails,
   type CommentThreadQuery,
 } from "@/api/client";
+import {
+  documentAnchorOf,
+  inDocumentOrder,
+  quotedPassage,
+} from "@/components/comments/comment-anchor";
+import {CommentAuthor} from "@/components/comments/comment-author";
 import {CommentComposer} from "@/components/comments/comment-composer";
-import {useCommentDraft} from "@/components/comments/comment-drafts";
+import {readDraftAnchor, useCommentDraft} from "@/components/comments/comment-drafts";
 import {maximumCommentBodyCharacters} from "@/components/comments/comment-limits";
 import {
   mergeThreads,
@@ -29,7 +35,11 @@ import {
   useCommentListOwnership,
   useCommentPoll,
 } from "@/components/comments/comment-poll";
-import {formatTimestamp} from "@/lib/presentation";
+import {failureMessage, formatTimestamp} from "@/lib/presentation";
+import {
+  agentWorkOf,
+  agentWorkSentence,
+} from "@/components/dispatch/agent-work";
 import {bundleOfThreads} from "@/components/dispatch/dispatch-bundle";
 import {loadDispatchIndex} from "@/components/dispatch/dispatch-index";
 import {
@@ -46,16 +56,38 @@ import {
 } from "@/review-frame/protocol";
 
 const threadPageSize = 100;
+/** How long a resolved card stays in Open as "Resolved · Undo". */
+const resolveAcknowledgementMilliseconds = 6_000;
 const conversationLoadConcurrency = 6;
 
-function agentPresenceSummary(agents: readonly AgentPresence[] | null): string {
-  if (agents === null) return "Checking presence…";
-  const connectedCount = agents.filter((agent) => agent.connected).length;
-  const offlineCount = agents.length - connectedCount;
-  if (offlineCount === 0) {
-    return connectedCount === 0 ? "No agents connected" : `${connectedCount} connected`;
+/** Said while the last presence check failed: the old list may be wrong. */
+const presenceUnknownSummary = "Agent status unknown — the last check failed.";
+const presenceUnknownReason = "Can't send until agent status is known.";
+
+/** One line naming who can take comments: "Pi is connected". */
+function agentPresenceSummary(
+  agents: readonly AgentPresence[] | null,
+  stale: boolean,
+): string {
+  if (stale) return presenceUnknownSummary;
+  if (agents === null) return "Checking agents…";
+  const connected = agents.filter((agent) => agent.connected);
+  const offline = agents.filter((agent) => !agent.connected);
+  const [onlyConnected] = connected;
+  const lead = connected.length === 1 && onlyConnected !== undefined
+    ? `${onlyConnected.displayName} is connected`
+    : connected.length > 1
+      ? `${connected.length} agents connected`
+      : null;
+  const [onlyOffline] = offline;
+  if (lead === null) {
+    return offline.length === 1 && onlyOffline !== undefined
+      ? `${onlyOffline.displayName} is offline`
+      : offline.length === 0
+        ? "No agents connected"
+        : `No agents connected · ${offline.length} offline`;
   }
-  return `${connectedCount} connected · ${offlineCount} offline`;
+  return offline.length === 0 ? lead : `${lead} · ${offline.length} offline`;
 }
 
 function threadQuery(
@@ -140,24 +172,41 @@ async function loadConversations(
 export interface ReviewCommentSession {
   readonly artifactId: string | null;
   readonly annotations: readonly ReviewAnnotation[];
-  readonly changeState: (thread: CommentThread) => Promise<void>;
+  /** Resolve an open thread or reopen a resolved one; true once stored. */
+  readonly changeState: (thread: CommentThread) => Promise<boolean>;
   readonly createReply: (
     thread: CommentThread,
     body: string,
     idempotencyKey: string,
   ) => Promise<boolean>;
   readonly deleteReply: (reply: CommentReply) => Promise<void>;
+  /** The last mutation failure, shown beside the threads it concerns. */
   readonly error: Error | null;
+  /**
+   * The last mutation failure when it was a new comment's save: shown next
+   * to the new-comment composer, where its draft is restored.
+   */
+  readonly createError: Error | null;
+  /**
+   * The last full read's failure, cleared by the next successful read. With
+   * no threads loaded it means the conversation is unknown, not empty.
+   */
+  readonly loadError: Error | null;
   readonly loading: boolean;
   readonly projectId: string;
   readonly reload: () => Promise<void>;
   readonly repliesByThread: ReadonlyMap<string, readonly CommentReply[]>;
   readonly selectedThreadId: string | null;
   readonly selectThread: (threadId: string | null) => void;
+  /**
+   * Create a thread. Callers that can retry pass the compose attempt's stable
+   * idempotency key so a retry after a lost response replays, never duplicates.
+   */
   readonly submit: (
     body: string,
     anchor: ReviewAnchor | null,
     path: string | null,
+    idempotencyKey?: string,
   ) => Promise<boolean>;
   readonly threads: readonly CommentThread[];
   readonly unanchoredIds: readonly string[];
@@ -186,6 +235,10 @@ export function useReviewComments({
   const [unanchoredIds, setUnanchoredIds] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  // The failure a new comment's save raised; it is the current error only
+  // while no later mutation has replaced it.
+  const [createFailure, setCreateFailure] = useState<Error | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const watermarkRef = useRef<string | null>(null);
   const reloadGenerationRef = useRef(0);
   const threadUpdatedAtRef = useRef<ReadonlyMap<string, string>>(new Map());
@@ -201,6 +254,7 @@ export function useReviewComments({
       setSelectedThreadId(null);
       setUnanchoredIds([]);
       setError(null);
+      setLoadError(null);
       return;
     }
     setLoading(true);
@@ -223,10 +277,11 @@ export function useReviewComments({
         setRepliesByThread(new Map(
           conversations.map(({replies, thread}) => [thread.id, replies]),
         ));
+        setLoadError(null);
       });
     } catch (caught) {
       if (reloadGenerationRef.current !== generation) return;
-      setError(
+      setLoadError(
         caught instanceof Error ? caught : new Error("Comment loading failed."),
       );
     } finally {
@@ -239,6 +294,7 @@ export function useReviewComments({
     setRepliesByThread(new Map());
     setSelectedThreadId(null);
     setUnanchoredIds([]);
+    setLoadError(null);
     void reload();
   }, [reload]);
 
@@ -299,6 +355,7 @@ export function useReviewComments({
     body: string,
     anchor: ReviewAnchor | null,
     path: string | null,
+    idempotencyKey: string = crypto.randomUUID(),
   ): Promise<boolean> => {
     if (artifactId === null || projectId === "" || versionId === null) return false;
     setError(null);
@@ -310,7 +367,7 @@ export function useReviewComments({
           artifactId,
           versionId,
           {anchor: storedAnchor, body, path},
-          crypto.randomUUID(),
+          idempotencyKey,
         )
       );
       if (created.thread.versionId !== versionId) {
@@ -321,15 +378,15 @@ export function useReviewComments({
       }
       return true;
     } catch (caught) {
-      setError(
-        caught instanceof Error ? caught : new Error("Comment creation failed."),
-      );
+      const failure = caught instanceof Error ? caught : new Error("Comment creation failed.");
+      setCreateFailure(failure);
+      setError(failure);
       return false;
     }
   }, [artifactId, onVersionChanged, ownership, projectId, reload, versionId]);
 
-  const changeState = useCallback(async (thread: CommentThread): Promise<void> => {
-    if (artifactId === null || projectId === "") return;
+  const changeState = useCallback(async (thread: CommentThread): Promise<boolean> => {
+    if (artifactId === null || projectId === "") return false;
     setError(null);
     try {
       await ownership.own(() =>
@@ -338,10 +395,12 @@ export function useReviewComments({
         })
       );
       await reload();
+      return true;
     } catch (caught) {
       setError(
         caught instanceof Error ? caught : new Error("Comment state change failed."),
       );
+      return false;
     }
   }, [artifactId, ownership, projectId, reload]);
 
@@ -415,9 +474,11 @@ export function useReviewComments({
     annotations,
     artifactId,
     changeState,
+    createError: error !== null && error === createFailure ? error : null,
     createReply,
     deleteReply,
     error,
+    loadError,
     loading,
     projectId,
     reload,
@@ -444,32 +505,55 @@ function NewThreadComposer({
   readonly session: ReviewCommentSession;
   readonly versionId: string;
 }) {
-  const draft = useCommentDraft({
-    artifactId,
-    principalId,
-    threadId: null,
-    versionId,
+  const draftContext = {artifactId, principalId, threadId: null, versionId};
+  const draft = useCommentDraft(draftContext);
+  // A draft restored from a failed in-document save keeps its anchor and
+  // posts anchored; quote the passage so it does not read as a general one.
+  const [quote, setQuote] = useState(() => {
+    const kept = draft.restored ? readDraftAnchor(draftContext) : null;
+    const keptAnchor = kept === null ? null : reviewAnchorSchema.safeParse(kept.anchor);
+    return keptAnchor?.success === true ? quotedPassage(keptAnchor.data) : "";
   });
   return (
     <div data-new-thread-composer>
+      {quote === "" ? null : (
+        <blockquote className="as-comment-card__quote as-comment-composer__quote">{quote}</blockquote>
+      )}
       <CommentComposer
         cancelLabel={null}
+        collapsible
         draftRestored={draft.restored}
+        idempotencyKeyFor={draft.attemptKey}
         initialBody={draft.initialBody}
         inputId={`review-new-thread-${versionId}`}
         key={`new-thread-${versionId}-${draft.restored ? "draft" : "empty"}`}
         label="Add a comment"
         maximumCharacters={maximumCommentBodyCharacters}
-        onBodyChange={draft.onBodyChange}
+        onBodyChange={(body) => {
+          draft.onBodyChange(body);
+          // A blank body clears the draft and its anchor; drop the quote too,
+          // so new text is not shown under a passage it will not be posted on.
+          if (body.trim() === "") setQuote("");
+        }}
         onCancel={null}
-        onDiscardDraft={draft.onDiscard}
-        onSubmit={async (body) => {
-          const saved = await session.submit(body, null, null);
-          if (saved) draft.onPosted();
+        onDiscardDraft={() => {
+          draft.onDiscard();
+          setQuote("");
+        }}
+        onSubmit={async (body, idempotencyKey) => {
+          const saved = await session.submit(body, null, null, idempotencyKey);
+          if (saved) {
+            draft.onPosted();
+            setQuote("");
+          }
           return saved;
         }}
+        placeholder="Comment on the whole document…"
         submitLabel="Post comment"
       />
+      {session.createError === null ? null : (
+        <p className="as-comments__error as-notice" role="alert">{failureMessage(session.createError)}</p>
+      )}
     </div>
   );
 }
@@ -514,6 +598,7 @@ function ReplyComposer({
       <CommentComposer
         cancelLabel="Cancel"
         draftRestored={draft.restored}
+        idempotencyKeyFor={draft.attemptKey}
         initialBody={replyBody}
         inputId={`review-reply-${thread.id}`}
         label="Reply"
@@ -536,6 +621,7 @@ function ReplyComposer({
           }
           return saved;
         }}
+        placeholder="Add a reply…"
         submitLabel="Post reply"
       />
     </div>
@@ -564,7 +650,8 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
 }, ref) {
   const unanchored = new Set(session.unanchoredIds);
   const [agents, setAgents] = useState<readonly AgentPresence[] | null>(null);
-  const [agentError, setAgentError] = useState<Error | null>(null);
+  // A failed poll makes the last list stale: it may no longer be connected.
+  const [presenceStale, setPresenceStale] = useState(false);
   const [view, setView] = useState<CommentView>("open");
   const [sentThreads, setSentThreads] = useState<readonly CommentThread[]>([]);
   const [sentReplies, setSentReplies] = useState<ReadonlyMap<
@@ -576,14 +663,17 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     AgentDispatch
   >>(new Map());
   const [sentLoading, setSentLoading] = useState(false);
+  // Threads just resolved from Open keep their place as an Undo line briefly.
+  const [acknowledged, setAcknowledged] = useState<ReadonlySet<string>>(new Set());
+  const acknowledgementTimers = useRef(new Map<string, number>());
   const [sentError, setSentError] = useState<Error | null>(null);
 
   const loadAgents = useCallback(async (): Promise<void> => {
     try {
       setAgents(await api.agentPresence());
-      setAgentError(null);
-    } catch (caught) {
-      setAgentError(caught instanceof Error ? caught : new Error("Agent presence failed."));
+      setPresenceStale(false);
+    } catch {
+      setPresenceStale(true);
     }
   }, []);
 
@@ -635,6 +725,37 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     view === "sent" && session.artifactId !== null && versionId !== null,
   );
 
+  useEffect(() => {
+    const timers = acknowledgementTimers.current;
+    return () => {
+      for (const timer of timers.values()) window.clearTimeout(timer);
+    };
+  }, []);
+
+  const forgetAcknowledgement = (threadId: string): void => {
+    window.clearTimeout(acknowledgementTimers.current.get(threadId));
+    acknowledgementTimers.current.delete(threadId);
+    setAcknowledged((current) => {
+      const next = new Set(current);
+      next.delete(threadId);
+      return next;
+    });
+  };
+
+  const resolveFromOpen = async (thread: CommentThread): Promise<void> => {
+    if (!await session.changeState(thread)) return;
+    setAcknowledged((current) => new Set(current).add(thread.id));
+    acknowledgementTimers.current.set(thread.id, window.setTimeout(
+      () => forgetAcknowledgement(thread.id),
+      resolveAcknowledgementMilliseconds,
+    ));
+  };
+
+  const undoResolve = async (thread: CommentThread): Promise<void> => {
+    forgetAcknowledgement(thread.id);
+    await session.changeState(thread);
+  };
+
   const openThreads = session.threads.filter((thread) => thread.state === "open");
   const resolvedThreads = session.threads.filter((thread) => thread.state === "resolved");
   const visibleThreads = view === "sent"
@@ -642,11 +763,51 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     : view === "all"
       ? [...openThreads, ...resolvedThreads]
       : view === "open"
-        ? openThreads
+        ? inDocumentOrder(session.threads.filter((thread) =>
+          thread.state === "open" || acknowledged.has(thread.id)
+        ))
         : resolvedThreads;
   const visibleReplies = view === "sent" ? sentReplies : session.repliesByThread;
   const loadingVisible = view === "sent" ? sentLoading : session.loading;
+  // A failed first read leaves the conversation unknown: no count, list or
+  // empty state may stand in for it. A failed later read keeps what loaded.
+  const readFailed = session.loadError !== null && session.threads.length === 0;
+  const newThreadComposerShown = canComment && !readFailed && versionId !== null
+    && session.artifactId !== null;
+  const sentReadFailed = sentError !== null && sentThreads.length === 0;
+  const agentWork = agentWorkOf(sentThreads, dispatchByThread);
+  // Commenting keys are service principals too, so only an author whose
+  // principal registered as an agent earns the Agent tag; names prove nothing.
+  const agentsByPrincipal = new Map(
+    agents?.map((agent) => [agent.principalId, agent]) ?? [],
+  );
+  const openSentCount = sentThreads.filter((thread) => thread.state === "open").length;
   const now = Date.now();
+
+  /** Why Open is empty, without claiming "resolved" for work an agent holds. */
+  const openEmptyMessage = (): string => {
+    const withAgents = agentWorkSentence(agentWork);
+    const stalled = agentWork.stalled === 1
+      ? "1 sent comment was not delivered."
+      : `${agentWork.stalled} sent comments were not delivered.`;
+    if (withAgents !== null) {
+      return agentWork.stalled === 0 ? `${withAgents}.` : `${withAgents}. ${stalled}`;
+    }
+    if (agentWork.stalled > 0) return stalled;
+    return resolvedThreads.length > 0
+      || sentThreads.some((thread) => thread.state === "resolved")
+      ? "All comments on this version are resolved."
+      : "No open comments on this version.";
+  };
+  const showSent = (
+    <button
+      className="as-button as-comments__to-sent"
+      onClick={() => setView("sent")}
+      type="button"
+    >
+      Show sent comments
+    </button>
+  );
 
   const cancelDispatch = async (dispatch: AgentDispatch): Promise<void> => {
     setSentError(null);
@@ -666,20 +827,32 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
     <div className="as-comments">
       {dispatchUndo.element}
       <div className="as-comments__agents">
-        <div>
-          <strong>Agents</strong>
-          <span>{agentPresenceSummary(agents)}</span>
-        </div>
+        <p data-stale={presenceStale ? "true" : undefined}>
+          {agentPresenceSummary(agents, presenceStale)}
+        </p>
         <div aria-label="Agent presence" role="group">
-          {agents?.map((agent) => (
+          {presenceStale ? null : agents?.map((agent) => (
             <PresenceAvatar agent={agent} key={agent.id} now={now} />
           ))}
         </div>
       </div>
-      {agentError === null ? null : (
-        <p className="as-comments__agent-error">{agentError.message}</p>
-      )}
-      {canComment ? (
+      {readFailed ? (
+        <div className="as-comments__read-error as-notice" role="alert">
+          <p>
+            Comments could not be loaded.
+            {session.loadError === null ? null : ` ${failureMessage(session.loadError)}`}
+          </p>
+          <button
+            className="as-button"
+            disabled={session.loading}
+            onClick={() => void reloadDispatchSurface()}
+            type="button"
+          >
+            {session.loading ? "Trying again…" : "Try again"}
+          </button>
+        </div>
+      ) : null}
+      {canComment && !readFailed ? (
         <div className="as-comments__send-all">
           <SendToAgentControl
             agents={agents}
@@ -693,6 +866,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
             principalId={principalId}
             projectId={session.projectId}
             resolveBundle={() => Promise.resolve(bundleOfThreads(openThreads))}
+            unavailableReason={presenceStale ? presenceUnknownReason : null}
           />
         </div>
       ) : null}
@@ -701,30 +875,47 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
           Comments are read-only for this account or archived project.
         </p>
       )}
-      {session.error === null ? null : (
-        <p className="as-comments__error" role="alert">{session.error.message}</p>
+      {session.error === null || (session.createError !== null && newThreadComposerShown) ? null : (
+        <p className="as-comments__error as-notice" role="alert">{failureMessage(session.error)}</p>
       )}
-      {sentError === null ? null : (
-        <p className="as-comments__error" role="alert">{sentError.message}</p>
+      {readFailed ? null : session.loadError === null ? null : (
+        <p className="as-comments__error as-notice" role="alert">
+          Comments could not be refreshed; showing the last loaded ones.
+        </p>
       )}
-      <nav aria-label="Comment filters" className="as-comments__filters">
-        {(["open", "all", "resolved", "sent"] as const).map((candidate) => (
-          <button
-            aria-pressed={view === candidate}
-            className="as-button"
-            key={candidate}
-            onClick={() => setView(candidate)}
-            type="button"
-          >
-            {candidate === "all"
-              ? "All"
-              : candidate === "sent"
-                ? `Sent (${sentThreads.length})`
-                : `${candidate[0]?.toUpperCase()}${candidate.slice(1)}`}
-          </button>
-        ))}
-      </nav>
-      {canComment && versionId !== null && session.artifactId !== null ? (
+      {sentError === null || readFailed ? null : (
+        <p className="as-comments__error as-notice" role="alert">{failureMessage(sentError)}</p>
+      )}
+      {readFailed || (openThreads.length === 0 && agentWork.total === 0) ? null : (
+        // Each count names its scope: open means not yet sent, so it is
+        // exactly what Send all carries; the rest are held by an agent.
+        <p className="as-comments__counts">
+          {[
+            `${openThreads.length} open`,
+            ...agentWork.byAgent.map(([name, count]) => `${count} with ${name}`),
+          ].join(" · ")}
+        </p>
+      )}
+      {readFailed ? null : (
+        <nav aria-label="Comment filters" className="as-comments__filters">
+          {(["open", "all", "resolved", "sent"] as const).map((candidate) => (
+            <button
+              aria-pressed={view === candidate}
+              className="as-button"
+              key={candidate}
+              onClick={() => setView(candidate)}
+              type="button"
+            >
+              {candidate === "all"
+                ? "All"
+                : candidate === "sent"
+                  ? sentReadFailed ? "Sent" : `Sent (${sentThreads.length})`
+                  : `${candidate[0]?.toUpperCase()}${candidate.slice(1)}`}
+            </button>
+          ))}
+        </nav>
+      )}
+      {newThreadComposerShown && versionId !== null && session.artifactId !== null ? (
         <NewThreadComposer
           artifactId={session.artifactId}
           key={`${session.artifactId}-${versionId}`}
@@ -733,53 +924,108 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
           versionId={versionId}
         />
       ) : null}
-      {loadingVisible && visibleThreads.length === 0 ? (
+      {loadingVisible && !readFailed && visibleThreads.length === 0 ? (
         <p className="as-inspector-empty">Loading comments…</p>
       ) : null}
-      {!loadingVisible && visibleThreads.length === 0 ? (
-        <p className="as-inspector-empty">
-          {view === "all"
-            ? "No comments on this version yet."
-            : view === "sent"
-              ? "No sent comments on this version."
-              : view === "open" && resolvedThreads.length > 0
-                ? "All comments on this version are resolved."
-                : `No ${view} comments on this version.`}
-        </p>
+      {view === "all" && !readFailed && sentThreads.length > 0 ? (
+        // DSP-004 keeps sent comments out of default listings; say so here.
+        <div className="as-inspector-empty as-comments__empty">
+          <p>
+            {sentThreads.length === 1
+              ? "1 sent comment is listed under Sent, not here."
+              : `${sentThreads.length} sent comments are listed under Sent, not here.`}
+          </p>
+          {showSent}
+        </div>
+      ) : null}
+      {!loadingVisible && !readFailed && !(view === "sent" && sentReadFailed)
+          && !(view === "all" && sentThreads.length > 0)
+          && visibleThreads.length === 0 ? (
+        <div className="as-inspector-empty as-comments__empty">
+          <p>
+            {view === "all"
+              ? "No comments on this version yet."
+              : view === "sent"
+                ? "No sent comments on this version."
+                : view === "open"
+                  ? openEmptyMessage()
+                  : `No ${view} comments on this version.`}
+          </p>
+          {view === "open" && openSentCount > 0 ? showSent : null}
+        </div>
       ) : null}
       <ol className="as-comment-list">
         {visibleThreads.map((thread) => {
           const sentDispatch = view === "sent" ? dispatchByThread.get(thread.id) : undefined;
           const replies = visibleReplies.get(thread.id) ?? [];
+          if (view === "open" && thread.state === "resolved") {
+            return (
+              <li key={thread.id}>
+                <p className="as-comment-ack" role="status">
+                  <span>Resolved</span>
+                  <button
+                    className="as-button"
+                    onClick={() => void undoResolve(thread)}
+                    type="button"
+                  >
+                    Undo
+                  </button>
+                </p>
+              </li>
+            );
+          }
+          const lastReply = replies.at(-1);
+          const replyingAgent = thread.state === "open" && lastReply !== undefined
+            ? agentsByPrincipal.get(lastReply.author.principalId)
+            : undefined;
+          // Under Sent the dispatch chip carries the comment's state, so the
+          // card adds no second "With <agent>" line.
+          const stateLine = replyingAgent === undefined
+            ? null
+            : `${replyingAgent.displayName} replied — check it and resolve`;
+          const anchor = documentAnchorOf(thread);
+          const anchored = anchor !== null;
+          const quote = anchor === null ? "" : quotedPassage(anchor);
           return (
             <li key={thread.id}>
               <article
                 aria-current={session.selectedThreadId === thread.id ? "true" : undefined}
                 className="as-comment-card"
                 data-selected={session.selectedThreadId === thread.id}
+                data-state={thread.state}
               >
                 <header>
-                  <strong>{thread.author.displayName}</strong>
-                  {sentDispatch === undefined
-                    ? <span data-state={thread.state}>{thread.state}</span>
-                    : <DispatchStateChip state={sentDispatch.state} />}
+                  <CommentAuthor
+                    displayName={thread.author.displayName}
+                    isAgent={agentsByPrincipal.has(thread.author.principalId)}
+                  />
+                  {sentDispatch !== undefined
+                    ? <DispatchStateChip state={sentDispatch.state} />
+                    : thread.state === "resolved"
+                      ? <span data-state="resolved">Resolved</span>
+                      : null}
                 </header>
                 <div className="as-comment-card__body">
+                  {quote === "" ? null : (
+                    <blockquote className="as-comment-card__quote">{quote}</blockquote>
+                  )}
                   <p>{thread.body}</p>
                   <footer>
+                    {stateLine === null ? null : (
+                      <p className="as-comment-card__state">{stateLine}</p>
+                    )}
                     <div className="as-comment-card__meta">
                       <span>
                         Updated <time dateTime={thread.updatedAt}>
                           {formatTimestamp(thread.updatedAt)}
                         </time>
                       </span>
-                      <span>
-                        {thread.path === null ? "Whole version" : (
-                          <>Page <code>{thread.path}</code></>
-                        )}
-                      </span>
+                      {anchored ? null : <span>General comment</span>}
+                      {thread.path === null ? null : (
+                        <span>Page <code>{thread.path}</code></span>
+                      )}
                     </div>
-                    {view !== "sent" && unanchored.has(thread.id) ? (
+                    {view !== "sent" && anchored && unanchored.has(thread.id) ? (
                       <small>Location unavailable in this version</small>
                     ) : null}
                     <div className="as-comment-card__actions">
@@ -797,9 +1043,10 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                         <>
                           {canComment && thread.state === "open" ? (
                             <SendToAgentControl
+                              agentGlyph={false}
                               agents={agents}
                               buttonSize="xs"
-                              buttonVariant="outline"
+                              buttonVariant="ghost"
                               feedback={dispatchUndo.feedback}
                               label="Send…"
                               onSent={onSent}
@@ -809,6 +1056,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                               projectId={session.projectId}
                               reasonDisplay="hidden"
                               resolveBundle={() => Promise.resolve(bundleOfThreads([thread]))}
+                              unavailableReason={presenceStale ? presenceUnknownReason : null}
                             />
                           ) : null}
                           {thread.path === null ? null : (
@@ -823,7 +1071,9 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                           {canComment ? (
                             <button
                               className="as-button"
-                              onClick={() => void session.changeState(thread)}
+                              onClick={() => void (view === "open"
+                                ? resolveFromOpen(thread)
+                                : session.changeState(thread))}
                               type="button"
                             >
                               {thread.state === "open" ? "Resolve" : "Reopen"}
@@ -847,6 +1097,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
                         <ReviewReply
                           canDeleteAny={canDeleteAny}
                           canMutate={canComment}
+                          isAgent={agentsByPrincipal.has(reply.author.principalId)}
                           key={reply.id}
                           onDelete={session.deleteReply}
                           onUpdate={session.updateReply}
@@ -878,6 +1129,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
 function ReviewReply({
   canDeleteAny,
   canMutate,
+  isAgent,
   onDelete,
   onUpdate,
   principalId,
@@ -885,6 +1137,7 @@ function ReviewReply({
 }: {
   readonly canDeleteAny: boolean;
   readonly canMutate: boolean;
+  readonly isAgent: boolean;
   readonly onDelete: (reply: CommentReply) => Promise<void>;
   readonly onUpdate: (reply: CommentReply, body: string) => Promise<boolean>;
   readonly principalId: string;
@@ -902,7 +1155,7 @@ function ReviewReply({
   return (
     <li>
       <header>
-        <strong>{reply.author.displayName}</strong>
+        <CommentAuthor displayName={reply.author.displayName} isAgent={isAgent} />
         <time dateTime={reply.updatedAt}>{formatTimestamp(reply.updatedAt)}</time>
       </header>
       {editing ? (

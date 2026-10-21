@@ -1,0 +1,10 @@
+{
+  "runId": "design-review-2026-10-17-as01",
+  "revision": "a20a64ca97ff1cd98abc0a62c7e3ffaa8721d794",
+  "capturedAt": "2026-10-17T22:40:00Z",
+  "mode": "implement",
+  "reviewers": ["ux-a", "ux-b", "ui-a", "ui-b", "pm-a", "pm-b"],
+  "families": {"A": ["ux-a", "ui-b", "pm-a"], "B": ["ux-b", "ui-a", "pm-b"]},
+  "familyModels": {"A": "Claude Opus 5.5 (high)", "B": "GPT-6.1-Sol (high)"},
+  "baselineCells": 268
+}

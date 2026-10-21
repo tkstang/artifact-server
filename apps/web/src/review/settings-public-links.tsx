@@ -265,7 +265,7 @@ export function PublicLinksScreen() {
             Reload
           </Button>
         )}
-        description="See every active artifact that currently allows public-link access, then make individual links or a bounded selection private."
+        description="Artifacts that anyone with the link can open without signing in, across every project. Make one or several private at once."
         eyebrow="Administration"
         title="Public links"
       />
@@ -311,7 +311,7 @@ export function PublicLinksScreen() {
       {loadedItems.length === 0 && fullyLoaded
         ? (
           <StatePanel
-            description="No active artifact in this installation currently allows public-link access."
+            description="No artifact can currently be opened without signing in."
             title="No public links"
           />
         )
@@ -319,7 +319,7 @@ export function PublicLinksScreen() {
           <>
             <section
               aria-label="Bulk selection"
-              className="flex flex-col gap-3 border p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
             >
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -386,7 +386,7 @@ export function PublicLinksScreen() {
                   <col className="as-public-links-table__link-column" />
                   <col className="as-public-links-table__actions-column" />
                 </colgroup>
-                <thead className="border-b bg-muted/50 text-xs tracking-widest text-muted-foreground uppercase">
+                <thead className="border-b bg-muted/50 text-[0.8125rem] font-medium text-muted-foreground">
                   <tr>
                     <th className="as-public-links-table__select-cell font-semibold">
                       <Checkbox

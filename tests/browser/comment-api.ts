@@ -1,4 +1,4 @@
-import {expect} from "@playwright/test";
+import {expect, type Page} from "@playwright/test";
 import {z} from "zod";
 
 import {apiHeaders} from "../support/runtime-harness.js";
@@ -115,4 +115,46 @@ export async function listThreadsOverApi(
   );
   expect(response.status).toBe(200);
   return threadPageSchema.parse(await response.json()).items;
+}
+
+/**
+ * Let the first comment create on `page` reach the server and be stored, then
+ * drop its response, as a lost network reply would. Later creates pass. The
+ * replay forwards the same-origin headers the server requires of browser
+ * mutations, so the first save genuinely commits (asserted as 201). `target`
+ * defaults to thread creation; pass the replies route to cover replies.
+ */
+export async function loseFirstCommittedCommentResponse(
+  page: Page,
+  target: RegExp = /\/versions\/[^/]+\/comments\?/u,
+): Promise<{
+  readonly bodies: readonly string[];
+  readonly keys: readonly string[];
+}> {
+  const bodies: string[] = [];
+  const keys: string[] = [];
+  await page.route(target, async (route) => {
+    const request = route.request();
+    if (request.method() !== "POST") {
+      await route.continue();
+      return;
+    }
+    keys.push(request.headers()["idempotency-key"] ?? "");
+    bodies.push(z.object({body: z.string()}).parse(request.postDataJSON()).body);
+    if (keys.length > 1) {
+      await route.continue();
+      return;
+    }
+    const stored = await route.fetch({
+      headers: {
+        ...await request.allHeaders(),
+        origin: new URL(request.url()).origin,
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+      },
+    });
+    expect(stored.status()).toBe(201);
+    await route.abort("connectionreset");
+  });
+  return {bodies, keys};
 }

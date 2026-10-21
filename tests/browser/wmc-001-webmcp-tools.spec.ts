@@ -155,7 +155,9 @@ test.describe("WMC-001 WebMCP review tools", () => {
       expect(reopened.counts).toEqual({open: 2, resolved: 0});
       await expect(firstCard).toHaveCount(0);
       await page.getByRole("button", {name: "Open", exact: true}).click();
-      await expect(firstCard.locator("[data-state=\"open\"]")).toBeVisible();
+      // Open is implied on a card; it carries the state and offers Resolve.
+      await expect(firstCard).toHaveAttribute("data-state", "open");
+      await expect(firstCard.getByRole("button", {exact: true, name: "Resolve"})).toBeVisible();
 
       // A new comment through the tool lands in the UI list like any other.
       const commented = echoSchema.parse(await callTool(page, "artifact_server_comment", {
@@ -215,6 +217,16 @@ test.describe("WMC-001 WebMCP review tools", () => {
       expect(await fixture.page.evaluate(() => "modelContext" in document)).toBe(false);
       expect(consoleMessages).toEqual([]);
 
+      // Settings says the browser cannot act on the preference rather than
+      // presenting an enabled-looking switch as working; the stored
+      // preference itself is untouched.
+      await fixture.page.goto(`${fixture.server.baseUrl}/review/settings/webmcp`);
+      await expect(fixture.page.getByText("Not available in this browser", {exact: true}))
+        .toBeVisible();
+      await expect(fixture.page.getByRole("checkbox", {name: /Browser agent tools/}))
+        .toBeChecked();
+      expect(consoleMessages).toEqual([]);
+
       // With a model context the tools register by default; switching the
       // preference off unregisters them live (the abort-signal path), the
       // settings page shows the stored choice, and switching it back on
@@ -251,6 +263,7 @@ test.describe("WMC-001 WebMCP review tools", () => {
           .withTags(["wcag2a", "wcag2aa"])
           .analyze();
         expect(accessibility.violations).toEqual([]);
+        await expect(page.getByText("Available in this browser", {exact: true})).toBeVisible();
         const toggle = page.getByRole("checkbox", {name: /Browser agent tools/});
         await expect(toggle).not.toBeChecked();
         await toggle.check();

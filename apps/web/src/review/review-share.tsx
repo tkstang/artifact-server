@@ -1,4 +1,5 @@
 import {
+  ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Cancel01Icon,
@@ -19,6 +20,7 @@ import {
   type ArtifactDetails,
   type ArtifactVersion,
 } from "@/api/client";
+import {failureMessage} from "@/lib/presentation";
 import claudeLogoUrl from "./assets/agents/claude.svg";
 import codexDarkLogoUrl from "./assets/agents/codex-dark.svg";
 import codexLightLogoUrl from "./assets/agents/codex-light.svg";
@@ -30,6 +32,11 @@ import opencodeDarkLogoUrl from "./assets/agents/opencode-dark.svg";
 import opencodeLightLogoUrl from "./assets/agents/opencode-light.svg";
 import piLogoUrl from "./assets/agents/pi.svg";
 import piLightLogoUrl from "./assets/agents/pi-light.svg";
+import {
+  manualCopyMessage,
+  selectForManualCopy,
+  writeClipboard,
+} from "./share-clipboard.ts";
 
 type ShareScreen = "access" | "agents" | "overview";
 type CopiedTarget =
@@ -41,6 +48,16 @@ type CopiedTarget =
   | "review-link";
 
 const copiedResetMilliseconds = 1_600;
+
+/** What each copied value is called in the manual-copy message. */
+const copiedNouns = {
+  "agent-prompt": "prompt",
+  "latest-link": "link",
+  "local-command": "command",
+  "mcp-address": "address",
+  "raw-link": "link",
+  "review-link": "link",
+} satisfies Record<CopiedTarget, string>;
 
 interface ReviewShareControlProps {
   readonly details: ArtifactDetails | null;
@@ -67,7 +84,9 @@ export function ReviewShareControl({
   const [copiedTarget, setCopiedTarget] = useState<CopiedTarget | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const copiedResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valueElements = useRef(new Map<CopiedTarget, HTMLElement>());
 
   useEffect(() => () => {
     if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
@@ -80,32 +99,32 @@ export function ReviewShareControl({
       setScreen("overview");
       setCopiedTarget(null);
       setFailure(null);
+      setMoreOpen(false);
     }
   };
 
-  const copyText = async (
-    text: string,
-    target: CopiedTarget,
-    failureMessage: string,
-  ): Promise<void> => {
+  const registerValue = (target: CopiedTarget) => (element: HTMLElement | null): void => {
+    if (element === null) valueElements.current.delete(target);
+    else valueElements.current.set(target, element);
+  };
+
+  const copyText = async (text: string, target: CopiedTarget): Promise<void> => {
     setFailure(null);
-    try {
-      if (navigator.clipboard === undefined) {
-        throw new Error("Clipboard access is unavailable in this browser.");
-      }
-      await navigator.clipboard.writeText(text);
-      setCopiedTarget(target);
-      if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
-      copiedResetTimer.current = setTimeout(
-        () => setCopiedTarget(null),
-        copiedResetMilliseconds,
-      );
-    } catch (caught) {
+    if (!await writeClipboard(text)) {
       setCopiedTarget(null);
-      setFailure(
-        caught instanceof Error ? caught.message : failureMessage,
-      );
+      const element = valueElements.current.get(target) ?? null;
+      setFailure(element === null
+        ? "Couldn't copy — your browser blocked the clipboard. Allow clipboard access and try again."
+        : manualCopyMessage(copiedNouns[target]));
+      selectForManualCopy(element);
+      return;
     }
+    setCopiedTarget(target);
+    if (copiedResetTimer.current !== null) clearTimeout(copiedResetTimer.current);
+    copiedResetTimer.current = setTimeout(
+      () => setCopiedTarget(null),
+      copiedResetMilliseconds,
+    );
   };
 
   const reviewLink = selectedVersion === null
@@ -117,7 +136,6 @@ export function ReviewShareControl({
     await copyText(
       reviewLink,
       "review-link",
-      "The exact Review link could not be copied.",
     );
   };
 
@@ -126,7 +144,6 @@ export function ReviewShareControl({
     await copyText(
       buildAgentReviewPrompt(details, selectedVersion, reviewLink),
       "agent-prompt",
-      "The agent review prompt could not be copied.",
     );
   };
 
@@ -166,7 +183,7 @@ export function ReviewShareControl({
       setScreen("overview");
     } catch (caught) {
       setFailure(
-        caught instanceof Error ? caught.message : "Artifact access could not be changed.",
+        caught instanceof Error ? failureMessage(caught) : "Artifact access could not be changed.",
       );
     } finally {
       setPending(false);
@@ -185,6 +202,7 @@ export function ReviewShareControl({
             aria-label="Share"
             className={triggerClassName}
             disabled={details === null || selectedVersion === null}
+            title="Share"
             type="button"
           />
         )}
@@ -247,7 +265,9 @@ export function ReviewShareControl({
                 <section aria-labelledby="as-share-link-heading" className="as-share-link">
                   <h3 id="as-share-link-heading">Review and comment</h3>
                   <div>
-                    <code title={reviewLink ?? undefined}>{reviewLink ?? ""}</code>
+                    <code ref={registerValue("review-link")} title={reviewLink ?? undefined}>
+                      {reviewLink ?? ""}
+                    </code>
                     <button
                       className="as-button as-button--primary"
                       disabled={reviewLink === null}
@@ -259,7 +279,7 @@ export function ReviewShareControl({
                         icon={copiedTarget === "review-link" ? Tick02Icon : Copy01Icon}
                         strokeWidth={1.8}
                       />
-                      {copiedTarget === "review-link" ? "Copied" : "Copy Review link"}
+                      {copiedTarget === "review-link" ? "Copied" : "Copy review link"}
                     </button>
                   </div>
                 </section>
@@ -272,7 +292,9 @@ export function ReviewShareControl({
                   />
                   <p>
                     People with access to this Artifact Server can review this exact version.
-                    {publicArtifact ? " The latest raw artifact is public." : ""}
+                    {publicArtifact
+                      ? " The latest raw artifact is public to anyone with its link."
+                      : ""}
                   </p>
                   <button
                     className="as-button"
@@ -284,81 +306,103 @@ export function ReviewShareControl({
                   </button>
                 </div>
 
-                <section aria-labelledby="as-share-secondary-heading" className="as-share-secondary">
-                  <h3 id="as-share-secondary-heading">Other links</h3>
-                  <ShareSecondaryLink
-                    copied={copiedTarget === "latest-link"}
-                    description="Moves when a new version is published"
-                    label="Latest"
-                    onCopy={() => {
-                      if (details !== null) {
-                        void copyText(
-                          details.links.artifact,
-                          "latest-link",
-                          "The latest artifact link could not be copied.",
-                        );
-                      }
-                    }}
-                    value={details?.links.artifact ?? ""}
-                  />
-                  <ShareSecondaryLink
-                    copied={copiedTarget === "raw-link"}
-                    description="Exact version without Review controls"
-                    label="Raw"
-                    onCopy={() => {
-                      if (selectedVersion !== null) {
-                        void copyText(
-                          selectedVersion.links.version,
-                          "raw-link",
-                          "The raw version link could not be copied.",
-                        );
-                      }
-                    }}
-                    value={selectedVersion?.links.version ?? ""}
-                  />
-                </section>
-
-                <section aria-labelledby="as-share-agent-heading" className="as-share-agent">
-                  <h3 id="as-share-agent-heading">Review with an AI agent</h3>
-                  <p>Copy one complete prompt into Claude, Codex, Cursor, GitHub Copilot, Pi, or OpenCode.</p>
-                  <div className="as-share-agent__actions">
-                    <button
-                      className="as-share-agent__prompt"
-                      disabled={details === null || selectedVersion === null}
-                      onClick={() => void copyAgentPrompt()}
-                      type="button"
-                    >
-                      <AgentLogos />
-                      <span>
-                        {copiedTarget === "agent-prompt" ? "Prompt copied" : "Copy review prompt"}
-                      </span>
-                      <HugeiconsIcon
-                        aria-hidden="true"
-                        icon={copiedTarget === "agent-prompt" ? Tick02Icon : Copy01Icon}
-                        strokeWidth={1.8}
-                      />
-                    </button>
-                    <button
-                      className="as-share-agent__setup"
-                      disabled={details === null}
-                      onClick={() => {
-                        setFailure(null);
-                        setScreen("agents");
-                      }}
-                      type="button"
-                    >
-                      Connect MCP
-                      <HugeiconsIcon aria-hidden="true" icon={ArrowRight01Icon} strokeWidth={1.8} />
-                    </button>
-                  </div>
-                </section>
-
                 {failure === null ? null : (
                   <p className="as-share-message" data-tone="error" role="alert">{failure}</p>
                 )}
                 {notice === null ? null : (
                   <p className="as-share-message" data-tone="notice" role="status">{notice}</p>
                 )}
+
+                <div className="as-share-more">
+                  <button
+                    aria-controls="as-share-more-panel"
+                    aria-expanded={moreOpen}
+                    className="as-share-more__toggle"
+                    onClick={() => setMoreOpen((current) => !current)}
+                    type="button"
+                  >
+                    <HugeiconsIcon
+                      aria-hidden="true"
+                      icon={moreOpen ? ArrowDown01Icon : ArrowRight01Icon}
+                      strokeWidth={1.8}
+                    />
+                    More ways to share
+                  </button>
+                  <div hidden={!moreOpen} id="as-share-more-panel">
+                    <section
+                      aria-labelledby="as-share-secondary-heading"
+                      className="as-share-secondary"
+                    >
+                      <h3 id="as-share-secondary-heading">Other links</h3>
+                      <ShareSecondaryLink
+                        copied={copiedTarget === "latest-link"}
+                        description="Moves when a new version is published"
+                        label="Latest"
+                        onCopy={() => {
+                          if (details !== null) {
+                            void copyText(details.links.artifact, "latest-link");
+                          }
+                        }}
+                        value={details?.links.artifact ?? ""}
+                        valueRef={registerValue("latest-link")}
+                      />
+                      <ShareSecondaryLink
+                        copied={copiedTarget === "raw-link"}
+                        description="Exact version without Review controls"
+                        label="Raw"
+                        onCopy={() => {
+                          if (selectedVersion !== null) {
+                            void copyText(selectedVersion.links.version, "raw-link");
+                          }
+                        }}
+                        value={selectedVersion?.links.version ?? ""}
+                        valueRef={registerValue("raw-link")}
+                      />
+                    </section>
+
+                    <section aria-labelledby="as-share-agent-heading" className="as-share-agent">
+                      <h3 id="as-share-agent-heading">Review with an AI agent</h3>
+                      <p>
+                        Copy one complete prompt into Claude, Codex, Cursor, GitHub Copilot, Pi, or
+                        OpenCode.
+                      </p>
+                      <div className="as-share-agent__actions">
+                        <button
+                          className="as-share-agent__prompt"
+                          disabled={details === null || selectedVersion === null}
+                          onClick={() => void copyAgentPrompt()}
+                          type="button"
+                        >
+                          <AgentLogos />
+                          <span>
+                            {copiedTarget === "agent-prompt" ? "Prompt copied" : "Copy review prompt"}
+                          </span>
+                          <HugeiconsIcon
+                            aria-hidden="true"
+                            icon={copiedTarget === "agent-prompt" ? Tick02Icon : Copy01Icon}
+                            strokeWidth={1.8}
+                          />
+                        </button>
+                        <button
+                          className="as-share-agent__setup"
+                          disabled={details === null}
+                          onClick={() => {
+                            setFailure(null);
+                            setScreen("agents");
+                          }}
+                          type="button"
+                        >
+                          Connect MCP
+                          <HugeiconsIcon
+                            aria-hidden="true"
+                            icon={ArrowRight01Icon}
+                            strokeWidth={1.8}
+                          />
+                        </button>
+                      </div>
+                    </section>
+                  </div>
+                </div>
               </div>
             ) : screen === "agents" ? (
               <div className="as-share-agent-setup">
@@ -376,9 +420,9 @@ export function ReviewShareControl({
                     onCopy={() => void copyText(
                       "artifactserver connect",
                       "local-command",
-                      "The local connection command could not be copied.",
                     )}
                     value="artifactserver connect"
+                    valueRef={registerValue("local-command")}
                   />
                 </section>
 
@@ -394,9 +438,9 @@ export function ReviewShareControl({
                     onCopy={() => void copyText(
                       mcpAddress,
                       "mcp-address",
-                      "The MCP server address could not be copied.",
                     )}
                     value={mcpAddress}
+                    valueRef={registerValue("mcp-address")}
                   />
                 </section>
 
@@ -536,15 +580,17 @@ function CopyableAgentValue({
   label,
   onCopy,
   value,
+  valueRef,
 }: {
   readonly copied: boolean;
   readonly label: string;
   readonly onCopy: () => void;
   readonly value: string;
+  readonly valueRef: (element: HTMLElement | null) => void;
 }) {
   return (
     <div className="as-share-agent-value">
-      <code title={value}>{value}</code>
+      <code ref={valueRef} title={value}>{value}</code>
       <button aria-label={label} onClick={onCopy} type="button">
         <HugeiconsIcon
           aria-hidden="true"
@@ -562,12 +608,14 @@ function ShareSecondaryLink({
   label,
   onCopy,
   value,
+  valueRef,
 }: {
   readonly copied: boolean;
   readonly description: string;
   readonly label: string;
   readonly onCopy: () => void;
   readonly value: string;
+  readonly valueRef: (element: HTMLElement | null) => void;
 }) {
   return (
     <div className="as-share-secondary__row">
@@ -575,7 +623,7 @@ function ShareSecondaryLink({
         <strong>{label}</strong>
         <small>{description}</small>
       </span>
-      <code title={value}>{value}</code>
+      <code ref={valueRef} title={value}>{value}</code>
       <button
         aria-label={`Copy ${label.toLocaleLowerCase("en-US")} link`}
         className="as-icon-button"

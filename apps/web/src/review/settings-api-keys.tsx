@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 import {
   api,
@@ -23,6 +23,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { formatTimestamp } from "@/lib/presentation";
+import {
+  manualCopyMessage,
+  selectForManualCopy,
+  writeClipboard,
+} from "./share-clipboard.ts";
 
 const capabilities: readonly {
   readonly description: string;
@@ -31,11 +36,11 @@ const capabilities: readonly {
 }[] = [
   { description: "List and read artifact metadata.", label: "Read artifacts", value: "artifact:read" },
   { description: "Create new artifacts.", label: "Create artifacts", value: "artifact:create" },
-  { description: "Publish new immutable versions.", label: "Publish versions", value: "artifact:publish:any" },
+  { description: "Publish new versions of artifacts.", label: "Publish versions", value: "artifact:publish:any" },
   { description: "Restore, change tags and access, or tombstone.", label: "Manage artifacts", value: "artifact:manage:any" },
-  { description: "Open account-required artifact content.", label: "Issue content sessions", value: "content-session:issue" },
+  { description: "Open the content of private artifacts.", label: "Open private content", value: "content-session:issue" },
   { description: "Create, rename, archive, and unarchive projects.", label: "Manage projects", value: "project:manage" },
-  { description: "Register a coding agent and claim dispatched annotations.", label: "Connect agents", value: "agent:connect" },
+  { description: "Register a coding agent and claim the comments sent to it.", label: "Connect agents", value: "agent:connect" },
   { description: "Read, reply to, and resolve review comments.", label: "Manage comments", value: "comment:write" },
 ];
 
@@ -181,7 +186,7 @@ export function ApiKeysScreen() {
                     onChange={(event) => setMemberId(event.currentTarget.value)}
                     value={memberId}
                   >
-                    <NativeSelectOption value="">Service principal</NativeSelectOption>
+                    <NativeSelectOption value="">Service key (no member)</NativeSelectOption>
                     {members.filter((member) => member.status === "active").map((member) => (
                       <NativeSelectOption key={member.id} value={member.id}>
                         {member.displayName} · {member.email}
@@ -228,7 +233,7 @@ export function ApiKeysScreen() {
             </DialogContent>
           </Dialog>
         )}
-        description="Managed API keys have explicit capabilities, a required expiration, and revocation. Secrets are never shown again."
+        description="Keys let automation and MCP clients act on this server. Each key has only the permissions you choose and an expiry date, and its secret is shown once."
         eyebrow="Administration"
         title="API keys"
       />
@@ -239,11 +244,13 @@ export function ApiKeysScreen() {
         ? (
           <StatePanel description="Loading managed API keys." title="Loading API keys" />
         )
-        : apiKeys.length === 0
+        : apiKeys.length === 0 && error !== null
+          ? null
+          : apiKeys.length === 0
           ? (
             <StatePanel
-              description="Issue a scoped key for automation or a compatible self-hosted MCP client."
-              title="No managed API keys"
+              description="Issue a key with Issue API key for automation or an MCP client that cannot sign in through the browser."
+              title="No API keys yet"
             />
           )
           : (
@@ -324,18 +331,31 @@ function SecretDialog({
   readonly onDiscard: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const secretElement = useRef<HTMLElement | null>(null);
   if (issued === null) return null;
+  const copySecret = async (token: string): Promise<void> => {
+    const written = await writeClipboard(token);
+    setCopied(written);
+    setCopyFailed(!written);
+    if (!written) selectForManualCopy(secretElement.current);
+  };
+  const discard = (): void => {
+    setCopied(false);
+    setCopyFailed(false);
+    onDiscard();
+  };
   return (
     <Dialog
+      // The secret is shown once: Escape and outside clicks only close the
+      // dialog after the key was copied; until then "I stored it" is the way out.
+      disablePointerDismissal={!copied}
       onOpenChange={(open) => {
-        if (!open) {
-          setCopied(false);
-          onDiscard();
-        }
+        if (!open && copied) discard();
       }}
       open
     >
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Copy API key now</DialogTitle>
           <DialogDescription>
@@ -343,19 +363,25 @@ function SecretDialog({
             deployment secret manager. Artifact Server cannot show it again.
           </DialogDescription>
         </DialogHeader>
-        <code className="max-h-32 overflow-auto border bg-muted p-3 font-mono text-xs break-all">
+        <code
+          className="max-h-32 overflow-auto border bg-muted p-3 font-mono text-xs break-all"
+          ref={secretElement}
+        >
           {issued.token}
         </code>
+        {copyFailed ? (
+          <p className="text-sm text-destructive" role="alert">
+            {manualCopyMessage("key")}
+          </p>
+        ) : null}
         <DialogFooter>
           <Button
-            onClick={() => {
-              void navigator.clipboard.writeText(issued.token).then(() => setCopied(true));
-            }}
+            onClick={() => void copySecret(issued.token)}
             type="button"
           >
             {copied ? "Copied" : "Copy API key"}
           </Button>
-          <Button onClick={onDiscard} type="button" variant="outline">
+          <Button onClick={discard} type="button" variant="outline">
             I stored it
           </Button>
         </DialogFooter>

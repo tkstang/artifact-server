@@ -29,3 +29,24 @@ body {
 [data-comment-popover] button[aria-label="Attachments"] {
   display: none;
 }
+
+/*
+ * The labelled Commenting toggle in the shell carries annotate mode, so the
+ * viewer's armed ring is reduced to a quiet hairline in the border colour.
+ * Its inline inset shadow reads --primary; scoping that to transparent here
+ * leaves the frame's Save button and every other primary use untouched.
+ */
+[data-annotate-armed-ring] {
+  --primary: transparent;
+  border: 1px solid var(--border);
+}
+
+/*
+ * Authored HTML renders as it would in its own browser tab, where a page with
+ * no background sits on a white canvas. The sandboxed document is transparent,
+ * so without this a dark app theme showed through behind dark page text.
+ * Markdown documents paint their own themed paper over it.
+ */
+iframe {
+  background: #ffffff;
+}

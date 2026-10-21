@@ -5,6 +5,7 @@ Use these guides to install, connect, operate, and extend Artifact Server.
 ## Start here
 
 - [Deployment](./deployment.md)
+- [Review guide](./review.md)
 - [MCP and AI agents](./mcp.md)
 - [Pi live feedback extension](../integrations/pi/README.md)
 - [OpenCode extension](../integrations/opencode/README.md)

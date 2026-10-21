@@ -1,0 +1,1230 @@
+[
+  {
+    "id": "B01",
+    "kind": "bug",
+    "title": "Primary button labels fail contrast in dawn (2.44:1)",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: apps/web/src/review/review.css:60-65 is unlayered and overrides layered utilities; baseline axe 2.44:1 on 38 cells (fact-checked)",
+    "findings": [
+      "ux-b-11",
+      "ui-a-01",
+      "pm-b-32",
+      "ui-b-01"
+    ],
+    "problem": "Shadcn primary buttons (Send all, New project, dialog primaries) render #0c090c text on #432dd7 in dawn, 2.44:1, and lose their weight. axe flags the 2.44:1 pair in 38 baseline cells.",
+    "proposal": "Scope the reset at review.css:60-65 (`button, input, select {color: inherit; font: inherit}`) into `@layer base` so Tailwind utilities win; assert the computed label colour in a browser test.",
+    "reviewers": [
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B02",
+    "kind": "bug",
+    "title": "Sending says every comment is resolved while they are queued",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: apps/web/src/review/review-comments.tsx:739-748 chooses the message from resolvedThreads.length only",
+    "findings": [
+      "ux-b-02",
+      "ui-a-05",
+      "ux-a-02",
+      "ui-b-33",
+      "pm-a-02"
+    ],
+    "problem": "When the Open list is empty after loading and at least one resolved thread exists, it reads 'All comments on this version are resolved.' — including right after a send, while the sent threads sit queued.",
+    "proposal": "When Open is empty, say how many are with the agent ('3 comments are with Pi') and link to Sent; only claim 'all resolved' when nothing is sent or open.",
+    "reviewers": [
+      "pm-a",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B03",
+    "kind": "bug",
+    "title": "Whole-version comments are flagged as broken locations",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-comments.tsx:782 renders the warning for any id the frame reports as unanchored (review-preview.tsx:301); reproduced by all six reviewers",
+    "findings": [
+      "ux-b-16",
+      "ui-a-17",
+      "pm-b-07",
+      "ux-a-01",
+      "ui-b-08",
+      "pm-a-01"
+    ],
+    "problem": "Open whole-version (page-kind) comments outside the Sent view, including one just posted, show a red 'Location unavailable in this version'.",
+    "proposal": "Only report a location as unavailable for threads that carry a document anchor; show whole-version comments as 'General comment' in neutral text.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B04",
+    "kind": "bug",
+    "title": "An artifact link on a phone opens behind the catalog",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-app.tsx:560 `useState(true)` for catalogOpen regardless of width; baseline 390 cells",
+    "findings": [
+      "ux-b-08",
+      "ui-a-02",
+      "pm-b-02",
+      "ux-a-20",
+      "pm-a-13"
+    ],
+    "problem": "A direct artifact link at 390px opens with the 336px catalog covering the document.",
+    "proposal": "Start with the catalog closed when the viewport is narrow and the URL names an artifact.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B05",
+    "kind": "bug",
+    "title": "The All filter omits sent threads",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-comments.tsx:639-644",
+    "findings": [
+      "ux-b-14",
+      "pm-b-06",
+      "ux-a-03",
+      "pm-a-30"
+    ],
+    "problem": "The All filter shows open plus resolved threads only; sent threads appear only under Sent.",
+    "proposal": "Rename the filters so scopes are exact, or include sent threads in All with their dispatch chip. SND-001 only requires sent threads out of the Open list.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B06",
+    "kind": "bug",
+    "title": "Inspector tab strip overflows and clips at 1440",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review.css:2280-2287 overflow-x:auto with scrollbar-width:none; baseline inspector cells at 1440",
+    "findings": [
+      "ux-a-13",
+      "ui-b-11",
+      "ui-a-21"
+    ],
+    "problem": "Five or six tabs with count badges overflow the 352px inspector; the strip scrolls with no visible scrollbar, clipping 'Versions' and hiding Activity.",
+    "proposal": "Fit the tabs (shorter labels, no zero badges, fewer tabs) or show an overflow affordance.",
+    "reviewers": [
+      "ui-a",
+      "ui-b",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "B07",
+    "kind": "bug",
+    "title": "Document comment markers and highlights are near-invisible in dawn",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-preview.tsx:537 maps --accent to --as-surface-raised",
+    "findings": [
+      "ui-b-02",
+      "ui-a-19"
+    ],
+    "problem": "In dawn the in-document comment markers and highlight underline use the surface colour, so white numerals sit on near-white bubbles.",
+    "proposal": "Map the annotation accent passed to the frame to a dedicated annotation colour with a tested numeral contrast.",
+    "reviewers": [
+      "ui-a",
+      "ui-b"
+    ]
+  },
+  {
+    "id": "B08",
+    "kind": "bug",
+    "title": "Annotate mode hijacks the Markdown Contents toggle",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports (ux-b-04, ux-a-09), reproduced by both; code path markdown.ts:117 not re-verified",
+    "findings": [
+      "ux-b-04",
+      "ux-a-09"
+    ],
+    "problem": "In the default annotate mode, clicking the Markdown 'Contents' toggle opens a comment composer instead of the outline.",
+    "proposal": "Exclude the generated outline navigation from annotation targets so it always works as navigation.",
+    "reviewers": [
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B09",
+    "kind": "bug",
+    "title": "Remaining contrast failures (public pill, delete, error red, selected thread, renderer table/code)",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline axe: public pill 15 moon cells, delete 20 dawn cells, error banner 2 cells; renderer pairs from ui-b-22 not re-measured",
+    "findings": [
+      "ux-b-34",
+      "ui-a-08",
+      "ux-a-44",
+      "ui-b-37",
+      "ui-a-07",
+      "ui-a-09",
+      "ui-b-13",
+      "ui-b-22"
+    ],
+    "problem": "Several smaller pairs fail AA: moon 'public' pill 4.18:1, dawn Delete artifact 3.44:1, dawn error banner 3.87:1, selected-thread chips, and renderer table headers/code comments just under 4.5:1.",
+    "proposal": "Fix each pair through the new colour roles and add both themes' axe checks to the matrix.",
+    "reviewers": [
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B10",
+    "kind": "bug",
+    "title": "Activity scroll area has no keyboard entry",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline axe scrollable-region-focusable on inspector activity cells; review.css:2322",
+    "findings": [
+      "ui-a-41"
+    ],
+    "problem": "An Activity panel that overflows without a Load more button has no focusable element, so keyboard users cannot scroll it.",
+    "proposal": "Make the inspector body a focusable, labelled region (tabindex=0) when it scrolls.",
+    "reviewers": [
+      "ui-a"
+    ]
+  },
+  {
+    "id": "B11",
+    "kind": "bug",
+    "title": "Narrow Markdown tables break ordinary words",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: markdown.css:45 `.md-document { overflow-wrap: anywhere }`",
+    "findings": [
+      "ui-a-06"
+    ],
+    "problem": "At 390px Markdown tables break words mid-letter ('Revie/w').",
+    "proposal": "Limit overflow-wrap:anywhere to inline code and URLs; let tables scroll horizontally with their words intact.",
+    "reviewers": [
+      "ui-a"
+    ]
+  },
+  {
+    "id": "B12",
+    "kind": "bug",
+    "title": "Retrying a comment after a lost save response duplicates it",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-comments.tsx:313 calls crypto.randomUUID() per submit; the new-thread path ignores the composer's stable retry key (fact-checked)",
+    "findings": [
+      "ux-b-01"
+    ],
+    "problem": "A comment whose save response is lost is posted again with a new idempotency key on retry, creating a duplicate.",
+    "proposal": "Keep one idempotency key per draft until the save succeeds.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B13",
+    "kind": "bug",
+    "title": "Show in page leaves the phone document hidden behind comments",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-03), not re-verified",
+    "findings": [
+      "ux-b-03"
+    ],
+    "problem": "At 390px, Show in page selects the thread but leaves the inspector covering the document.",
+    "proposal": "On narrow layouts, close or minimise the inspector before scrolling to the anchor.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B14",
+    "kind": "bug",
+    "title": "Reload does not recover a failed HTML preview",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-app.tsx:1924-1929 reload calls comments reload only",
+    "findings": [
+      "ux-b-06"
+    ],
+    "problem": "After a failed HTML preview, the footer Reload refreshes comments (and sometimes presence) but never retries the preview lease, so the preview stays unavailable.",
+    "proposal": "Make Reload also retry the preview lease, or show a Retry preview action in the failure state.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B15",
+    "kind": "bug",
+    "title": "Recovering a failed in-document comment loses its anchor",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-07), not re-verified",
+    "findings": [
+      "ux-b-07"
+    ],
+    "problem": "A failed in-document save is restored as a sidebar draft and then posts as a whole-version comment, losing its anchor.",
+    "proposal": "Keep the anchor with the draft and restore it to the in-document composer.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B16",
+    "kind": "bug",
+    "title": "A failed comment read is shown as an empty conversation",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-09); code review-comments.tsx:704-708 shows error and list states together",
+    "findings": [
+      "ux-b-09"
+    ],
+    "problem": "When the first comments read fails, the panel shows the error alongside 'Comments 0' and 'No open comments', implying there are none. Failed background refreshes keep the loaded threads.",
+    "proposal": "On read failure, hide counts and empty-state copy and show one retryable error.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B17",
+    "kind": "bug",
+    "title": "Comment counts disagree between catalog, tab, toolbar and send button",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-app.tsx:1520 and :1961 (from reviewer reports, cited by two)",
+    "findings": [
+      "ux-a-04",
+      "pm-a-08",
+      "pm-b-10",
+      "ux-b-19"
+    ],
+    "problem": "Unselected catalog cards count stored threads across versions; the selected card counts loaded, undispatched threads for one version; the tab, focus toolbar and Send all share the open-undispatched scope. Counts drop when comments are sent.",
+    "proposal": "Define one count per place and label it ('3 open · 2 with Pi').",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B18",
+    "kind": "bug",
+    "title": "Escape does not close the phone inspector overlay",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-33), not re-verified",
+    "findings": [
+      "ux-b-33"
+    ],
+    "problem": "Escape does not close the phone inspector overlay.",
+    "proposal": "Make Escape close the topmost overlay, as the shortcut guide says.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B19",
+    "kind": "bug",
+    "title": "Inspector tabs ignore arrow keys",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-32), not re-verified",
+    "findings": [
+      "ux-b-32"
+    ],
+    "problem": "Inspector tabs are separate Tab stops and ignore arrow keys.",
+    "proposal": "Implement the WAI-ARIA tabs pattern (roving tabindex, arrows, Home/End).",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B21",
+    "kind": "bug",
+    "title": "The shell uses undefined CSS tokens",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review.css:527, 588, 638, 3023, 3593 and review-preview.tsx:559, 561 reference the undefined tokens (fact-checked)",
+    "findings": [
+      "ui-b-38"
+    ],
+    "problem": "The shell references --as-hover, --as-border-strong, --as-foam and --as-pine, which are never defined.",
+    "proposal": "Define them in the token layer.",
+    "reviewers": [
+      "ui-b"
+    ]
+  },
+  {
+    "id": "B22",
+    "kind": "bug",
+    "title": "Clipboard failure shows a raw browser exception",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-a-26); review-share.tsx:93",
+    "findings": [
+      "ux-a-26"
+    ],
+    "problem": "A rejected clipboard write shows the raw DOMException.",
+    "proposal": "Show a plain message and select the link text for manual copying.",
+    "reviewers": [
+      "ux-a"
+    ]
+  },
+  {
+    "id": "B23",
+    "kind": "bug",
+    "title": "Escape can discard the only displayed API key",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-28); settings-api-keys.tsx:330",
+    "findings": [
+      "ux-b-28"
+    ],
+    "problem": "Escape dismisses the one-time API key dialog before the key is copied.",
+    "proposal": "Require an explicit 'I stored it' or Copy before dismissal.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B24",
+    "kind": "bug",
+    "title": "WebMCP reads as enabled when the browser cannot provide it",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "webmcp.tsx:593-608 registration checks; 612-627 availability-blind checkbox (fact-checked)",
+    "findings": [
+      "ux-b-26",
+      "pm-b-17"
+    ],
+    "problem": "The WebMCP checkbox looks enabled even when the browser has no modelContext.",
+    "proposal": "Show availability next to the preference.",
+    "reviewers": [
+      "pm-b",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B25",
+    "kind": "bug",
+    "title": "Offline presence still reads connected with Send enabled",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer report (ux-b-31), not re-verified",
+    "findings": [
+      "ux-b-31"
+    ],
+    "problem": "When the browser is offline, presence still says '1 connected' and Send stays enabled.",
+    "proposal": "Mark presence stale after a failed poll and disable send with a reason.",
+    "reviewers": [
+      "ux-b"
+    ]
+  },
+  {
+    "id": "B26",
+    "kind": "bug",
+    "title": "The send menu shows a stray divider row",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "seen in baseline send--agent-menu cells",
+    "findings": [
+      "ui-b-44"
+    ],
+    "problem": "With one agent, the send menu shows a stray divider above 'Send with a note…': the remaining button keeps an unconditional top border.",
+    "proposal": "Drop the top border when the button is the menu's first item.",
+    "reviewers": [
+      "ui-b"
+    ]
+  },
+  {
+    "id": "T01",
+    "kind": "theme",
+    "title": "Typography reads as a terminal: monospace, uppercase tracking, a dozen tiny sizes",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review.css carries ~30 mono declarations and the .as-mono helper (counted by reviewers); measured sizes from ui-a-03 and ui-b-05",
+    "findings": [
+      "ui-a-12",
+      "ui-b-04",
+      "ui-b-05",
+      "ui-b-15",
+      "ui-b-21",
+      "ui-a-03"
+    ],
+    "problem": "Monospace (Atkinson Hyperlegible Mono) is the chrome's second voice: search, filters, counts, dates, footer, pills and eyebrows. Labels use uppercase tracking, and the shell has about a dozen sizes between 10 and 14px; comment bodies are 12.8px and actions 10.6px beside 16px document text.",
+    "proposal": "Sans for all UI text; mono only for code, paths, IDs and URLs. Sentence case with no tracking. A six-step type scale (12/13/14/16/20/28) with comment bodies at 14px.",
+    "reviewers": [
+      "ui-a",
+      "ui-b"
+    ]
+  },
+  {
+    "id": "T02",
+    "kind": "theme",
+    "title": "Hard square chrome and a cool palette compete with a warm document",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review.css:13 `--as-radius: 0`; theme-tokens.css hue 322-326 neutrals vs markdown.css warm ramp",
+    "findings": [
+      "ui-a-10",
+      "ui-a-32",
+      "ui-b-03",
+      "ui-b-19",
+      "ui-b-20",
+      "ui-b-43",
+      "ui-b-47",
+      "ui-a-35",
+      "ui-a-34"
+    ],
+    "problem": "Square corners (`--as-radius: 0`), 1px borders around every region, a purple outline around the annotate-mode preview, graph-paper backgrounds and a cool mauve-tinted grey ramp surround a warm, paper-like Markdown document. Three brand marks appear.",
+    "proposal": "Warm neutral palette shared by chrome and renderer, soft radii (6px controls, 10px cards and popovers), borders only between panes and on inputs, quiet surfaces separated by spacing and fill, plain canvases for empty states.",
+    "reviewers": [
+      "ui-a",
+      "ui-b"
+    ]
+  },
+  {
+    "id": "T03",
+    "kind": "theme",
+    "title": "Components have many variants: buttons, inputs, tabs, badges, selection, focus, dialogs",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer component inventories (ui-a, ui-b), spot-checked in baseline captures",
+    "findings": [
+      "ui-a-13",
+      "ui-a-30",
+      "ui-b-09",
+      "ui-b-10",
+      "ui-b-14",
+      "ui-b-16",
+      "ui-b-17",
+      "ui-b-23",
+      "ui-b-32",
+      "ui-b-36",
+      "ui-b-39",
+      "ui-a-22",
+      "ui-b-40",
+      "ui-b-42"
+    ],
+    "problem": "About nine button variants, three input styles, seven selected-state treatments, uppercase dialog titles, blurred and unblurred scrims, 1px focus outlines, and count badges on every section header.",
+    "proposal": "One primitive set: buttons (primary/secondary/ghost/danger; 28/32/40), inputs (boxed, 6px), tabs (underline), badges (neutral/accent/status, sentence case), one selection treatment, one 2px focus ring, one dialog and one scrim.",
+    "reviewers": [
+      "ui-a",
+      "ui-b"
+    ]
+  },
+  {
+    "id": "T04",
+    "kind": "theme",
+    "title": "Dark is the first-visit default and system preference is ignored",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: apps/web/src/review/main.tsx:14-18 treats anything except 'dawn' as moon",
+    "findings": [
+      "pm-b-25",
+      "ui-b-45",
+      "pm-a-43"
+    ],
+    "problem": "Dark (moon) is the default for everyone and ignores the OS preference; most authored HTML is a white page inside near-black chrome.",
+    "proposal": "Follow prefers-color-scheme on first visit, falling back to dawn; keep saved choices. Fix dawn's contrast bugs first.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-b"
+    ]
+  },
+  {
+    "id": "T05",
+    "kind": "theme",
+    "title": "Comment threads are dense, small and button-heavy, with no quoted passage",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports (5 of 6), confirmed in baseline comments cells",
+    "findings": [
+      "ui-a-14",
+      "ui-a-15",
+      "ui-a-16",
+      "ui-a-18",
+      "ux-b-18",
+      "ui-b-06",
+      "ui-b-07",
+      "ui-b-25",
+      "ui-b-28",
+      "ux-a-14",
+      "ux-a-30",
+      "ui-a-39",
+      "pm-a-48",
+      "ui-a-37"
+    ],
+    "problem": "A one-line anchored comment measures about 218px with five button targets across several compact rows; anchored cards say 'Page index.html' instead of quoting the passage; per-card 'Send to Pi' repeats the agent avatar; the agents block sits above the conversation.",
+    "proposal": "Google Docs-style thread cards: avatar and name, quoted passage, 14px body, replies indented under the root, Reply and Resolve as quiet text actions, secondary actions in an overflow menu, agent replies with an agent badge.",
+    "reviewers": [
+      "pm-a",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T06",
+    "kind": "theme",
+    "title": "Two composers speak different languages and the inline one covers its passage",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports (all six), confirmed in baseline composer cells",
+    "findings": [
+      "ux-a-15",
+      "ui-b-27",
+      "pm-a-44",
+      "ux-b-17",
+      "ui-a-20",
+      "ui-b-26",
+      "ux-a-35",
+      "pm-b-26",
+      "ui-b-24"
+    ],
+    "problem": "The sidebar composer ('Describe what should change and why', Post comment) and the in-document popover ('Add a comment...', Save, Cmd+Enter) differ in words, keys and look; the popover covers the passage it quotes and labels it 'Paragraph'/'Heading'; an always-open blank composer pushes threads below the fold.",
+    "proposal": "One composer language (placeholder, button, shortcut) in both places; collapse the sidebar composer to a single 'Add a general comment' row until used; theme the popover through tokens and place it beside the selection where the package allows.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T07",
+    "kind": "theme",
+    "title": "The agent loop has no visible progress, outcome or finish line",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports (4 of 6); contracts SND-001, DSP-004 not changed",
+    "findings": [
+      "pm-a-03",
+      "ux-a-18",
+      "ux-a-17",
+      "pm-b-05",
+      "ux-a-05",
+      "ux-b-15",
+      "pm-b-22",
+      "pm-a-28",
+      "pm-b-23",
+      "pm-a-05",
+      "pm-a-31",
+      "pm-a-20",
+      "pm-b-21",
+      "pm-a-10",
+      "pm-a-27",
+      "ux-a-19",
+      "ux-b-20",
+      "pm-b-13"
+    ],
+    "problem": "After Send, threads leave the document and the Open list. The Sent view does show dispatch states, replies and times, but Open has no summary of work with the agent and no unread-reply indicator. Answered threads look untouched and are re-sent by Send all. Resolving gives no acknowledgement or undo.",
+    "proposal": "A visible per-thread state line ('With Pi · replying', 'Pi replied — check it'), keep sent threads reachable with Reply, an inline undo after resolve, and a completion message when nothing is open. Keep SND/DSP contracts: sent threads stay out of the Open list.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T08",
+    "kind": "theme",
+    "title": "The inspector opens on technical metadata instead of the conversation",
+    "severity": "high",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: review-app.tsx:559 `useState<InspectorTab>(\"details\")`",
+    "findings": [
+      "ux-b-12",
+      "pm-b-09",
+      "ux-a-06",
+      "ui-b-12",
+      "pm-a-06",
+      "ui-a-23",
+      "pm-a-07"
+    ],
+    "problem": "Opening an artifact selects the Details tab (IDs, routing, Danger zone with a red Delete) instead of Comments; five or six tabs split history across Versions, Compare and Activity.",
+    "proposal": "In the workspace, default the inspector tab to Comments; review routes (focus view) keep comments closed until requested, as CMT-015 requires. Order Details with human fields first and technical IDs disclosed.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T09",
+    "kind": "theme",
+    "title": "Engineering vocabulary and inconsistent terms on reviewer surfaces",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports, spot-checked in baseline (footer 'STATIC', Details rows)",
+    "findings": [
+      "ux-a-16",
+      "pm-a-09",
+      "ui-b-34",
+      "ux-a-32",
+      "pm-a-15",
+      "pm-b-24",
+      "ui-a-25",
+      "pm-b-20",
+      "pm-a-46",
+      "pm-a-23"
+    ],
+    "problem": "Reviewer-facing text uses 'manifest', 'entry', 'routing STATIC', 'immutable', principal IDs, '10 / 11', and calls one object a comment, thread and annotation.",
+    "proposal": "Plain language on reviewer surfaces ('Comment', 'Version 3', '2 files'), technical terms only inside disclosed details.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "T10",
+    "kind": "theme",
+    "title": "The reader loses the document's identity: title, version, mode",
+    "severity": "high",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline renderer and focus cells; review-app.tsx header markup",
+    "findings": [
+      "ui-a-04",
+      "pm-b-01",
+      "ux-b-13",
+      "ux-a-08",
+      "ux-a-21",
+      "ux-b-21",
+      "ui-a-33",
+      "ux-a-33",
+      "ui-b-50",
+      "ui-a-11",
+      "ui-b-18",
+      "ux-a-39",
+      "pm-a-32",
+      "pm-a-16"
+    ],
+    "problem": "The header truncates the title to fit five actions, gives the only filled button to Full screen, shows no version, and focus mode shows no title or version. The annotate-mode toggle is visually an icon only (it has an accessible label, title and pressed state).",
+    "proposal": "Header leads with the full title (wrapping or tooltip) and a version chip; Full screen becomes a quiet icon; annotate mode gets a labelled toggle; focus mode keeps a slim title-and-version bar.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T11",
+    "kind": "theme",
+    "title": "A first-time reviewer is not told who is asking or what is wanted",
+    "severity": "high",
+    "effort": "L",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports; publisher is available on versions (publisherPrincipalId), request field does not exist",
+    "findings": [
+      "ux-a-07",
+      "pm-b-08",
+      "pm-a-14"
+    ],
+    "problem": "Nothing tells a first-time reviewer who published the artifact or what they are asked to decide; how to comment is explained only in the composer and the mode tooltip.",
+    "proposal": "Publisher and time in the header; an optional review request (needs a publish-time field — later); a one-line 'Select text to comment' hint on first visit.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "T12",
+    "kind": "theme",
+    "title": "Empty, error and home states are contradictory or dead ends",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline catalog--empty-project and error cells",
+    "findings": [
+      "ux-b-24",
+      "pm-b-03",
+      "ui-a-31",
+      "ux-a-23",
+      "pm-a-34",
+      "ux-a-37",
+      "pm-a-47",
+      "pm-a-33"
+    ],
+    "problem": "The empty project shows 'No artifacts yet', 'Select an artifact' and 'Nothing selected' at once with 'Publish from the CLI' and no command; artifact-not-found repeats the error twice; the home overlay is a brand splash.",
+    "proposal": "One empty-state composition per screen with a concrete next step (copyable publish command or agent prompt); errors shown once with a way back.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T13",
+    "kind": "theme",
+    "title": "Version comparison names files but never shows the change",
+    "severity": "high",
+    "effort": "L",
+    "mockup": null,
+    "backlog": null,
+    "verified": "code: src/application/compare-artifact.ts:42-56 defines TextLineChange regions (computed elsewhere in the service); apps/web/src/api/client.ts:420-432 parses them; no review/*.tsx file renders detail.change",
+    "findings": [
+      "ux-b-05",
+      "pm-b-04",
+      "ui-a-26",
+      "ux-a-11",
+      "pm-a-04",
+      "ux-a-12",
+      "pm-b-11",
+      "pm-a-18",
+      "pm-a-17"
+    ],
+    "problem": "Compare reports '1 changed · index.html' with no content; the server already computes changed line regions.",
+    "proposal": "Show the changed regions (text diff for Markdown and HTML source) and a before/after toggle; make Compare part of Versions.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T14",
+    "kind": "theme",
+    "title": "Activity reads as an audit log of opaque IDs",
+    "severity": "medium",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline inspector--activity cells",
+    "findings": [
+      "ux-b-23",
+      "ui-a-24",
+      "ux-a-31",
+      "ui-b-35",
+      "pm-a-19",
+      "pm-b-27"
+    ],
+    "problem": "Activity rows show generic verbs and truncated principal IDs.",
+    "proposal": "Human names, what changed, and a link to the thing.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T15",
+    "kind": "theme",
+    "title": "Sharing mixes links, audiences and agent setup in one cramped panel",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline share cells; invite flow out of scope",
+    "findings": [
+      "pm-b-15",
+      "ui-a-27",
+      "ux-a-24",
+      "ux-a-25",
+      "pm-a-21",
+      "pm-a-24",
+      "pm-b-14",
+      "ux-b-30",
+      "ui-b-31",
+      "ux-b-29",
+      "pm-a-22"
+    ],
+    "problem": "Share leads with the exact Review link and an access summary, then secondary links in an 84px label column with 10px mono URLs, an agent prompt and MCP setup; 'Public' means different things in Share, Settings and the catalog; admitting a member lives only in Settings.",
+    "proposal": "Lead with 'Copy link' and who can open it; put latest/raw/agent options in a disclosure; one meaning of public.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T16",
+    "kind": "theme",
+    "title": "Settings and agent setup cannot confirm success and do not fit phones",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline settings cells at 390",
+    "findings": [
+      "ux-b-25",
+      "pm-b-16",
+      "ux-a-28",
+      "pm-a-26",
+      "ux-b-27",
+      "pm-b-18",
+      "ux-a-27",
+      "pm-b-19",
+      "pm-a-25",
+      "ui-a-28",
+      "ui-a-29",
+      "ui-b-41"
+    ],
+    "problem": "MCP and WebMCP settings show no live connection result (MCP points to the external `artifactserver doctor` check); API-key issuance asks operators to design capability bundles; settings navigation and tables overflow at 390.",
+    "proposal": "Show connected agents, capability presets, and a responsive settings layout.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T17",
+    "kind": "theme",
+    "title": "Busy reviews have no way to find, order or narrow feedback",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline comments--many cells",
+    "findings": [
+      "ux-b-22",
+      "pm-b-12",
+      "ux-a-29",
+      "pm-a-29"
+    ],
+    "problem": "24 open comments can be narrowed by state but not searched, grouped or sorted; two cards fit per screen.",
+    "proposal": "Sort by document order, group by section, add a filter box when there are many.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T18",
+    "kind": "theme",
+    "title": "The catalog shows storage facts, not what needs attention",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline catalog cells",
+    "findings": [
+      "pm-a-11",
+      "pm-a-12",
+      "ux-a-38"
+    ],
+    "problem": "Catalog rows show privacy, timestamp and '0 comments' but nothing about review state or what needs attention.",
+    "proposal": "Show review state (open, with agent, needs check) and hide zero counts.",
+    "reviewers": [
+      "pm-a",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "T19",
+    "kind": "theme",
+    "title": "Commenting on prose is mouse-only and click-to-comment surprises readers",
+    "severity": "high",
+    "effort": "L",
+    "mockup": null,
+    "backlog": null,
+    "verified": "from reviewer reports (4 of 6); annotation behaviour lives in @plannotator/ui",
+    "findings": [
+      "ux-b-10",
+      "ux-a-10",
+      "ux-a-36",
+      "pm-a-45",
+      "ux-a-45",
+      "ui-a-36"
+    ],
+    "problem": "No discoverable keyboard command anchors a comment to prose; in annotate mode (the default) a click on an element opens a composer while reading.",
+    "proposal": "A keyboard path to comment on the current selection, and a gentler click-to-comment (hover affordance, explicit Comment button).",
+    "reviewers": [
+      "pm-a",
+      "ui-a",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "T20",
+    "kind": "theme",
+    "title": "Panels overlay the document at 1024 and 390",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "baseline 1024 and 390 cells",
+    "findings": [
+      "ui-b-29",
+      "ui-b-30",
+      "ui-a-40",
+      "ux-a-34",
+      "ui-b-46"
+    ],
+    "problem": "At 1024 the inspector overlays a third of the document without a scrim; at 390 the header is six icon buttons and the focus drawer covers the text column.",
+    "proposal": "At narrow widths panels overlay the artifact (CMT-015) with a scrim and outside-click dismissal and restore it when closed; the narrow header keeps the title plus an overflow menu.",
+    "reviewers": [
+      "ui-a",
+      "ui-b",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "F01",
+    "kind": "fixture",
+    "title": "The agent never completes the send → claim → reply → new version loop",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "fixture",
+    "findings": [
+      "ux-b-35",
+      "pm-b-28",
+      "ux-a-42",
+      "pm-a-38",
+      "ui-a-38",
+      "pm-b-29",
+      "pm-a-39",
+      "pm-a-42"
+    ],
+    "problem": "Replies, resolved threads and versions are seeded before startup, but no agent lifecycle runs: Pi stays 'replying' and never claims, delivers or publishes, and its replies claim edits no version contains.",
+    "proposal": "Add a scripted lifecycle: claim, deliver, reply, publish a new version, and a thread in the 'addressed' state.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ui-a",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "F02",
+    "kind": "fixture",
+    "title": "Compressed clock makes timestamps identical and orders arbitrary",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "fixture",
+    "findings": [
+      "ux-b-36",
+      "ux-a-40",
+      "ui-b-49"
+    ],
+    "problem": "Publication advances the clock, but comment and reply seeding freezes it, so tied timestamps fall back to ID order.",
+    "proposal": "Advance the clock between comments and replies.",
+    "reviewers": [
+      "ui-b",
+      "ux-a",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "F03",
+    "kind": "fixture",
+    "title": "No members, external reviewer or human publisher",
+    "severity": "medium",
+    "effort": "M",
+    "mockup": null,
+    "backlog": null,
+    "verified": "fixture",
+    "findings": [
+      "ux-b-37",
+      "pm-b-31",
+      "pm-a-37"
+    ],
+    "problem": "Commenters are API keys, not members; versions store publisherPrincipalId but the shell shows no named human publisher; there is no external reviewer or second agent.",
+    "proposal": "Seed members and a second, disconnected agent; model a public-link reviewer.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-b"
+    ]
+  },
+  {
+    "id": "F04",
+    "kind": "fixture",
+    "title": "Busy and Markdown threads are page-level clones",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "fixture",
+    "findings": [
+      "pm-b-30",
+      "ux-a-41",
+      "pm-a-40"
+    ],
+    "problem": "The busy checklist uses two repeated comment templates and the Markdown proposal four distinct comments; all are page-level.",
+    "proposal": "Seed anchored threads across sections with varied lengths.",
+    "reviewers": [
+      "pm-a",
+      "pm-b",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "F05",
+    "kind": "fixture",
+    "title": "Filler artifacts are unstyled stubs",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "fixture",
+    "findings": [
+      "ux-a-43",
+      "ui-b-48",
+      "pm-a-41"
+    ],
+    "problem": "Filler HTML artifacts are unstyled stubs that look like renderer bugs.",
+    "proposal": "Give filler pages a minimal stylesheet.",
+    "reviewers": [
+      "pm-a",
+      "ui-b",
+      "ux-a"
+    ]
+  },
+  {
+    "id": "F06",
+    "kind": "fixture",
+    "title": "The fixture's project order lands the bare URL on the empty project",
+    "severity": "low",
+    "effort": "S",
+    "mockup": null,
+    "backlog": null,
+    "verified": "fixture",
+    "findings": [
+      "pm-a-36",
+      "ux-a-22",
+      "pm-a-35"
+    ],
+    "problem": "The seed's project creation lands the bare URL on the empty project.",
+    "proposal": "Create the empty project so Default stays first, or seed last-used state.",
+    "reviewers": [
+      "pm-a",
+      "ux-a"
+    ]
+  }
+]

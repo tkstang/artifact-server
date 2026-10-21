@@ -108,16 +108,18 @@ test.describe("PRS-006 presence avatar", () => {
 
       // The primary compose action reads as a real input at rest: its label
       // names the action plainly and the writing surface stays visibly
-      // bounded before focus instead of disappearing into the inspector.
+      // bounded before focus instead of disappearing into the inspector. It
+      // rests as one line and opens when focused.
       const newCommentInput = page.getByLabel("Add a comment");
       await expect(newCommentInput).toBeVisible();
-      expect(await newCommentInput.evaluate((element) => {
-        const style = getComputedStyle(element);
-        return {
-          borderWidth: style.borderTopWidth,
-          height: element.getBoundingClientRect().height,
-        };
-      })).toEqual({borderWidth: "1px", height: 80});
+      const composerBox = () => newCommentInput.evaluate((element) => ({
+        borderWidth: getComputedStyle(element).borderTopWidth,
+        height: element.getBoundingClientRect().height,
+      }));
+      expect(await composerBox()).toEqual({borderWidth: "1px", height: 40});
+      await newCommentInput.focus();
+      await expect.poll(async () => (await composerBox()).height).toBe(80);
+      await newCommentInput.blur();
 
       // Idle: the primary send-all control carries the agent's avatar — the
       // Pi brand mark in a circle whose solid ring is the state, not a bare
@@ -139,7 +141,7 @@ test.describe("PRS-006 presence avatar", () => {
       // Send all open annotations and let the agent claim them: the dispatch
       // alone derives "working" — the agent never wrote an activity state.
       await sendButton.click();
-      await expect(page.getByText("Sent 2 threads to pres")).toBeVisible();
+      await expect(page.getByText("Sent 2 comments to pres")).toBeVisible();
       expect((await agent.client.claim(agent.agentId, 2)).status).toBe(200);
 
       // The Review agent strip follows live presence independently of the
@@ -210,7 +212,7 @@ test.describe("PRS-006 presence avatar", () => {
       fixture.clock.advance(100_000);
       await expect(page.getByRole("button", {name: "pres — Disconnected"}))
         .toBeVisible({timeout: 30_000});
-      await expect(page.getByText("0 connected · 1 offline", {exact: true}))
+      await expect(page.getByText("pres is offline", {exact: true}))
         .toBeVisible();
 
       // Add another open comment so the disconnected default and replacement
@@ -273,6 +275,21 @@ test.describe("PRS-006 presence avatar", () => {
         ],
         sessionStorageKeys: ["artifact-review-return-url"],
       });
+
+      // Settings → MCP confirms which agents are connected in words: the
+      // live agent first, the disconnected one with when it was last seen,
+      // each with its working directory.
+      const settings = await fixture.context.newPage();
+      await settings.goto(`${fixture.server.baseUrl}/review/settings/mcp`);
+      const connectedAgents = settings.getByRole("region", {name: "Connected agents"});
+      const agentRows = connectedAgents.getByRole("listitem");
+      await expect(agentRows).toHaveCount(2);
+      await expect(agentRows.nth(0)).toContainText("backup");
+      await expect(agentRows.nth(0).getByText("Connected", {exact: true})).toBeVisible();
+      await expect(agentRows.nth(0).getByText("/work/backup", {exact: true})).toBeVisible();
+      await expect(agentRows.nth(1)).toContainText("pres");
+      await expect(agentRows.nth(1).getByText(/^Not connected · last seen /u)).toBeVisible();
+      await settings.close();
     } finally {
       await stopPresenceFixture(fixture);
     }

@@ -10,20 +10,37 @@
   --as-gap: 0.75rem;
   --as-footer-height: 2.5rem;
   --as-header-height: 3rem;
-  --as-radius: 0;
-  --as-canvas: var(--background);
+  --as-radius: 6px;
+  --as-radius-lg: 10px;
+  --as-canvas: #f7f6f3;
   --as-surface: var(--background);
   --as-surface-raised: var(--secondary);
+  --as-hover: #f1f0ec;
+  --as-selected: #ecebe7;
   --as-text: var(--foreground);
   --as-subtle: var(--muted-foreground);
   --as-muted: var(--muted-foreground);
   --as-border: var(--border);
+  --as-border-strong: var(--input);
   --as-iris: var(--sidebar-primary);
-  --as-iris-soft: color-mix(in oklab, var(--sidebar-primary) 12%, transparent);
+  --as-iris-soft: #eef0ff;
   --as-action: var(--primary);
   --as-on-action: var(--primary-foreground);
   --as-love: var(--destructive);
+  --as-love-soft: #fdecea;
   --as-gold: var(--chart-2);
+  --as-foam: var(--secondary);
+  --as-pine: #2f7d4f;
+  /* Comments: markers, highlights and the quote bar share this warm accent. */
+  --as-annotation: #b45309;
+  --as-annotation-wash: rgb(245 158 11 / 0.22);
+  /* Markers sit on author pages of any colour: white numeral at 5.0:1. */
+  --as-annotation-marker: #b45309;
+  --as-shadow-1: 0 1px 2px rgb(15 15 15 / 0.06);
+  --as-shadow-2: 0 4px 12px rgb(15 15 15 / 0.1), 0 1px 3px rgb(15 15 15 / 0.06);
+  --as-shadow-3: 0 12px 32px rgb(15 15 15 / 0.16), 0 2px 6px rgb(15 15 15 / 0.08);
+  --as-scrim: rgb(15 15 15 / 0.28);
+  --as-mono-font: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
   color-scheme: dark;
   font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
@@ -36,8 +53,18 @@
 }
 
 .dark {
-  --as-iris: color-mix(in oklab, var(--sidebar-primary) 70%, var(--foreground));
-  --as-iris-soft: color-mix(in oklab, var(--sidebar-primary) 14%, transparent);
+  --as-canvas: #191919;
+  --as-hover: #2a2a2a;
+  --as-selected: #2e2e2e;
+  --as-iris-soft: #2a2b45;
+  --as-love-soft: #3a2422;
+  --as-pine: #7fc79a;
+  --as-annotation: #f59e0b;
+  --as-annotation-wash: rgb(245 158 11 / 0.2);
+  --as-shadow-1: 0 1px 2px rgb(0 0 0 / 0.3);
+  --as-shadow-2: 0 4px 12px rgb(0 0 0 / 0.4), 0 0 0 1px #303030;
+  --as-shadow-3: 0 12px 32px rgb(0 0 0 / 0.5), 0 0 0 1px #303030;
+  --as-scrim: rgb(0 0 0 / 0.5);
 }
 
 * {
@@ -57,11 +84,17 @@ body {
   color: var(--as-text);
 }
 
-button,
-input,
-select {
-  color: inherit;
-  font: inherit;
+/*
+ * Layered so utility classes (shadcn buttons' text colour and weight) win
+ * over this reset; unlayered it beat them and left primary labels near-black.
+ */
+@layer base {
+  button,
+  input,
+  select {
+    color: inherit;
+    font: inherit;
+  }
 }
 
 button,

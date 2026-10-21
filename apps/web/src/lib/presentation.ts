@@ -42,10 +42,39 @@ export function formatBytes(value: number): string {
   return `${(value / 1_000_000_000).toFixed(1)} GB`;
 }
 
+const unreachableMessage = "Can't reach Artifact Server. Check your connection and try again.";
+const timedOutMessage = "Artifact Server took too long to answer. Try again.";
+const incompleteMessage = "Artifact Server could not complete the request.";
+
+/**
+ * Plain words for failures the browser raises itself. A rejected fetch is a
+ * TypeError whose text differs by browser ("Failed to fetch", "Load failed",
+ * "NetworkError when attempting to fetch resource."); a DOMException carries
+ * engine wording. Neither is shown to people. Returns null for any other
+ * error, whose message the product wrote.
+ */
+function browserFailureMessage(error: Error): string | null {
+  if (error instanceof DOMException) {
+    return error.name === "TimeoutError" ? timedOutMessage : incompleteMessage;
+  }
+  if (error instanceof TypeError) {
+    return /fetch|network|load failed/iu.test(error.message) ? unreachableMessage : incompleteMessage;
+  }
+  return null;
+}
+
+/**
+ * The message to show for a failure: the product's own wording (API and
+ * application errors) as written, browser-raised failures in plain words.
+ */
+export function failureMessage(error: Error): string {
+  return browserFailureMessage(error) ?? error.message;
+}
+
 /** Returns a useful operator-facing message for expected API failures. */
 export function errorMessage(error: Error): string {
   if (!(error instanceof ApiError)) {
-    return "Artifact Server could not complete the request.";
+    return browserFailureMessage(error) ?? incompleteMessage;
   }
   if (error.status === 401) {
     return "Your session expired. Sign in again to continue.";
@@ -65,42 +94,60 @@ export function errorMessage(error: Error): string {
   return error.message;
 }
 
+/**
+ * Names one version for readers: "Version 3" when it is the current one,
+ * "Version 2 of 3" when a newer version exists. A total that is not loaded
+ * yet (0) is left out.
+ */
+export function versionLabel(number: number, total: number, current: boolean): string {
+  return current || total < number ? `Version ${number}` : `Version ${number} of ${total}`;
+}
+
 /** Converts an access-setting value into the product's visible term. */
 export function accessSettingLabel(value: "account_required" | "public_link"): string {
   return value === "account_required" ? "Account required" : "Public link";
 }
 
-/** Converts one action kind into compact action-history text. */
-export function actionLabel(value: ArtifactAction["action"]): string {
+/**
+ * Says what one recorded action did, in plain words. A version number names
+ * the version a publish, restore or capture produced, when it is known.
+ */
+export function actionLabel(
+  value: ArtifactAction["action"],
+  versionNumber: number | null = null,
+): string {
+  const version = versionNumber === null ? "a version" : `version ${versionNumber}`;
   switch (value) {
     case "capture":
-      return "Captured linked file";
+      return versionNumber === null
+        ? "Captured the linked file"
+        : `Captured the linked file as version ${versionNumber}`;
     case "link":
-      return "Linked source file";
+      return "Linked a source file";
     case "relink":
-      return "Relinked source file";
+      return "Relinked the source file";
     case "change_access":
-      return "Changed access";
+      return "Changed who can open it";
     case "change_tags":
-      return "Replaced tags";
+      return "Changed tags";
     case "comment_create":
-      return "Opened comment";
+      return "Added a comment";
     case "comment_delete":
-      return "Deleted comment";
+      return "Deleted a comment";
     case "comment_reopen":
-      return "Reopened comment";
+      return "Reopened a comment";
     case "comment_reply":
-      return "Replied to comment";
+      return "Replied to a comment";
     case "comment_resolve":
-      return "Resolved comment";
+      return "Resolved a comment";
     case "comment_update":
-      return "Edited comment";
+      return "Edited a comment";
     case "delete":
-      return "Tombstoned artifact";
+      return "Deleted the artifact";
     case "publish":
-      return "Published version";
+      return `Published ${version}`;
     case "restore":
-      return "Restored version";
+      return `Made ${version} current`;
   }
   return actionHandled(value);
 }

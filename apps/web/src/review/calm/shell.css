@@ -1,0 +1,676 @@
+/* Calm shell: panels rest on a warm canvas; borders only where panes meet. */
+
+.as-app,
+body {
+  background: var(--as-canvas);
+}
+
+.as-catalog {
+  background: var(--as-canvas);
+}
+
+.as-preview-panel,
+.as-inspector {
+  border-color: var(--as-border);
+  border-radius: var(--as-radius-lg) var(--as-radius-lg) 0 0;
+  box-shadow: var(--as-shadow-1);
+}
+
+/* The empty preview canvas is plain, not graph paper. */
+.as-preview-panel__body {
+  background: var(--as-canvas);
+}
+
+/* Catalog rows: rounded hover rows, two-line titles, a quiet selected state. */
+.as-artifact-card {
+  border-bottom: 0;
+  border-radius: var(--as-radius);
+  margin: 1px 0.5rem;
+  min-height: 0;
+  padding: 0.6rem 0.65rem;
+  width: calc(100% - 1rem);
+}
+
+.as-artifact-card:hover {
+  background: var(--as-hover);
+}
+
+.as-artifact-card[data-selected="true"] {
+  background: var(--as-selected);
+  box-shadow: inset 2px 0 0 var(--as-iris);
+}
+
+.as-artifact-card__title-row strong {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: normal;
+}
+
+.as-artifact-card[data-selected="true"] .as-artifact-card__title-row strong {
+  font-weight: 600;
+}
+
+.as-artifact-card__meta {
+  font-size: 0.75rem;
+}
+
+.as-catalog__footer button {
+  font-size: 0.8125rem;
+}
+
+.as-catalog__brand-mark {
+  border-radius: 8px;
+}
+
+/* Document header: identity first, actions quiet. */
+.as-preview-header {
+  border-bottom: 1px solid var(--as-border);
+}
+
+.as-preview-header h1 {
+  font-size: 1rem;
+}
+
+.as-preview-header__actions .as-button--secondary,
+.as-preview-header__actions .as-button--primary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--as-subtle);
+  font-weight: 500;
+}
+
+.as-preview-header__actions .as-button--secondary:hover:not(:disabled),
+.as-preview-header__actions .as-button--primary:hover:not(:disabled) {
+  background: var(--as-hover);
+  color: var(--as-text);
+}
+
+.as-app-footer,
+.as-preview-footer {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+/* Inspector tabs fit the default 352px width (only Comments carries a
+   count); when a narrower panel or the Compare tab still makes the strip
+   scroll, the hidden edge fades so it reads as scrollable. */
+.as-inspector__header {
+  gap: 0.125rem;
+  padding: 0 0.25rem;
+}
+
+@media (pointer: fine) {
+  .as-inspector__header > .as-icon-button {
+    flex: 0 0 auto;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    width: 1.75rem;
+  }
+}
+
+.as-tab {
+  flex: 0 0 auto;
+  gap: 0.3rem;
+  padding: 0 0.375rem;
+}
+
+.as-tab > span {
+  line-height: 1.2;
+  min-width: 0;
+  padding: 0.05rem 0.35rem;
+}
+
+.as-tabs[data-overflow="end"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+}
+
+.as-tabs[data-overflow="start"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 2rem), transparent);
+}
+
+.as-tabs[data-overflow="both"] {
+  mask-image: linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2rem), transparent);
+}
+
+/* The inspector panel is a keyboard stop so a long panel can be scrolled. */
+.as-inspector__body:focus-visible {
+  outline: 2px solid var(--as-iris);
+  outline-offset: -2px;
+}
+
+/* Details: human fields first, technical identifiers behind a disclosure,
+   and a quiet outline button in the danger zone. */
+.as-inspector-row {
+  font-size: 0.8125rem;
+  grid-template-columns: 6rem minmax(0, 1fr);
+}
+
+.as-inspector-technical > details > summary {
+  align-items: center;
+  color: var(--as-subtle);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  list-style: none;
+  min-height: 2.45rem;
+  padding: 0 0.75rem;
+}
+
+.as-inspector-technical > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.as-inspector-technical > details > summary::before {
+  border-bottom: 1.5px solid currentcolor;
+  border-right: 1.5px solid currentcolor;
+  content: "";
+  height: 0.4rem;
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+  width: 0.4rem;
+}
+
+.as-inspector-technical > details[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.as-inspector-technical > details > summary:hover {
+  color: var(--as-text);
+}
+
+.as-inspector-section .as-button--danger {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--as-love) 45%, var(--as-border));
+  color: var(--as-love);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.as-inspector-section .as-button--danger:hover:not(:disabled) {
+  background: var(--as-love-soft);
+  color: var(--as-love);
+}
+
+/* The focus bar is one floating surface holding the same quiet ghost
+   buttons as the workspace header. A pressed control (Commenting, Comments)
+   reads in the accent on its own wash, so its label keeps AA contrast in
+   both themes. */
+.as-focus-controls {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-lg);
+  box-shadow: var(--as-shadow-2);
+  gap: 0.125rem;
+  padding: 0.25rem;
+}
+
+.as-focus-controls .as-focus-controls__button,
+.as-focus-controls .as-focus-controls__collapse {
+  backdrop-filter: none;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--as-subtle);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  min-height: 2rem;
+}
+
+.as-focus-controls .as-focus-controls__button:hover:not(:disabled),
+.as-focus-controls .as-focus-controls__collapse:hover {
+  background: var(--as-hover);
+  border-color: transparent;
+  color: var(--as-text);
+}
+
+.as-focus-controls .as-focus-controls__button[data-active="true"],
+.as-focus-controls .as-focus-controls__button[data-active="true"]:hover:not(:disabled) {
+  background: var(--as-iris-soft);
+  border-color: transparent;
+  color: var(--as-iris);
+}
+
+.as-focus-controls__count {
+  background: var(--as-surface-raised);
+  border-radius: 999px;
+  color: var(--as-subtle);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  min-height: 1.1rem;
+  min-width: 1.1rem;
+  padding: 0 0.35rem;
+}
+
+/* Collapsed, only the restore tab floats: it keeps the bar's surface. */
+.as-focus-controls__restore {
+  backdrop-filter: none;
+  background: var(--as-surface);
+  border-color: var(--as-border);
+  box-shadow: var(--as-shadow-2);
+  color: var(--as-subtle);
+}
+
+/* Document identity: the full title (up to two lines), its version and when
+   it was saved; secondary actions live in More actions. */
+.as-preview-header__title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  min-width: 0;
+}
+
+.as-preview-header h1 {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  font-size: 1rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.as-preview-header__meta {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.as-version-chip {
+  background: var(--as-surface-raised);
+  border-radius: 999px;
+  color: var(--as-subtle);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+.as-preview-header__saved {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-annotate-toggle[data-active="true"] {
+  background: var(--as-iris-soft);
+  color: var(--as-iris);
+}
+
+.as-annotate-toggle[data-active="true"]:hover:not(:disabled) {
+  background: var(--as-iris-soft);
+  color: var(--as-iris);
+}
+
+.as-preview-header__full-screen {
+  color: var(--as-subtle);
+}
+
+@container preview-panel (max-width: 40rem) {
+  .as-preview-header__saved {
+    display: none;
+  }
+}
+
+.as-more-actions {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-lg);
+  box-shadow: var(--as-shadow-3);
+  display: grid;
+  min-width: 12rem;
+  padding: 0.25rem;
+}
+
+.as-more-actions__positioner {
+  z-index: 40;
+}
+
+.as-more-actions__item {
+  align-items: center;
+  border-radius: var(--as-radius);
+  color: var(--as-text);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.8125rem;
+  gap: 0.55rem;
+  min-height: 2rem;
+  outline: none;
+  padding: 0 0.6rem;
+  text-decoration: none;
+}
+
+.as-more-actions__item svg {
+  color: var(--as-subtle);
+  height: 1rem;
+  width: 1rem;
+}
+
+.as-more-actions__item[data-highlighted] {
+  background: var(--as-hover);
+}
+
+.as-more-actions__item[data-disabled] {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Focus view keeps the exact artifact and version in its compact bar. */
+.as-focus-controls__identity {
+  align-items: center;
+  align-self: stretch;
+  display: flex;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0 0.5rem 0 0.5rem;
+}
+
+.as-focus-controls__identity strong {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .as-focus-controls__identity strong {
+    max-width: 8rem;
+  }
+}
+
+/* With the identity added the focus bar can be wider than a phone, for every
+   preview kind: bound the dock to the panel and let the open bar wrap, rows
+   kept to the right, so the identity and the exit stay on screen. A bar
+   sliding away (collapsing, or beside open comments) keeps its one row. */
+.as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] {
+  max-width: calc(100% - 1.5rem);
+}
+
+.as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] .as-focus-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* On phones the focus bar keeps to two rows: the identity on its own row,
+   then the controls as icons. Labels stay in the accessibility tree (the
+   buttons keep their names) and in each button's tooltip. The Markdown
+   reader starts below the bar. */
+@media (max-width: 600px) {
+  .as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] .as-focus-controls__identity {
+    flex: 1 0 100%;
+    min-height: 2rem;
+  }
+
+  .as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] .as-focus-controls__identity strong {
+    max-width: none;
+  }
+
+  .as-focus-controls .as-focus-controls__button {
+    min-width: 2.25rem;
+    padding-inline: 0.5rem;
+  }
+
+  .as-focus-controls .as-focus-controls__button .as-button__label {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .as-app[data-focus-mode="true"] .as-preview-panel__body[data-preview-kind="markdown"] {
+    padding-top: 112px;
+  }
+}
+
+/* A failed preview states its reason in the shared notice. */
+.as-preview-state .as-notice {
+  color: var(--as-text);
+  font-size: 0.8125rem;
+  margin: 0.75rem 0 0;
+  text-align: left;
+  width: 100%;
+}
+
+/* An empty project explains itself in the catalog; the canvas carries one
+   quiet line pointing there. */
+.as-preview-empty-hint {
+  color: var(--as-muted);
+  font-size: 0.875rem;
+  left: 50%;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 24rem;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2rem);
+}
+
+.as-link-button {
+  background: none;
+  border: 0;
+  color: var(--as-iris);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Empty and error states: one plain message on the canvas, with a next step. */
+.as-preview-welcome {
+  background: transparent;
+  border: 0;
+}
+
+.as-preview-welcome h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.as-preview-welcome small {
+  font-size: 0.875rem;
+}
+
+.as-preview-welcome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.as-catalog-empty {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.25rem 1rem;
+}
+
+.as-catalog-empty strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.as-catalog-empty p {
+  color: var(--as-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.as-catalog-empty a {
+  color: var(--as-iris);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.as-catalog-empty__command {
+  align-items: center;
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem 0.35rem 0.35rem 0.6rem;
+}
+
+.as-catalog-empty__command code {
+  flex: 1;
+  font-family: var(--as-mono-font);
+  font-size: 0.75rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.as-catalog-empty__command .as-button {
+  flex: 0 0 auto;
+}
+
+/* Compare: each changed text file shows its changed lines before and after,
+   labelled by version, not only by colour. */
+.as-compare-file {
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius);
+  display: grid;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.as-compare-file > header {
+  background: var(--as-surface-raised);
+  border-bottom: 1px solid var(--as-border);
+  padding: 0.4rem 0.6rem;
+}
+
+.as-compare-file > header code {
+  font-family: var(--as-mono-font);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.as-compare-file > .as-inspector-empty {
+  margin: 0;
+  padding: 0.6rem;
+}
+
+.as-compare-lines h3 {
+  color: var(--as-subtle);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0;
+  padding: 0.45rem 0.6rem 0.25rem;
+}
+
+.as-compare-lines ol {
+  font-family: var(--as-mono-font);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0.15rem 0.6rem 0.5rem 2.6rem;
+}
+
+.as-compare-lines li::marker {
+  color: var(--as-muted);
+}
+
+.as-compare-lines code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.as-compare-lines[data-side="before"] ol {
+  background: color-mix(in oklab, var(--as-love) 7%, var(--as-surface));
+}
+
+.as-compare-lines[data-side="after"] ol {
+  background: color-mix(in oklab, var(--as-pine) 9%, var(--as-surface));
+}
+
+.as-compare-lines > .as-inspector-empty {
+  margin: 0;
+  padding: 0 0.6rem 0.5rem;
+}
+
+/* Activity: a plain sentence, then when and by whom. */
+.as-activity-list strong {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.as-activity-list__meta {
+  align-items: baseline;
+  color: var(--as-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  gap: 0.2rem 0.6rem;
+}
+
+.as-activity-list__meta time {
+  color: inherit;
+  font-size: inherit;
+}
+
+.as-activity-list__meta code {
+  font-family: var(--as-mono-font);
+  font-size: 0.6875rem;
+}
+
+/* Where a panel overlays the artifact, a click outside closes it. Docked
+   panels never show a catcher. Where the document stays readable beside the
+   overlay the catcher is transparent; only on phones, where the panel covers
+   most of the document, does an unblurred scrim dim it. */
+.as-overlay-scrim {
+  display: none;
+}
+
+@keyframes as-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  .as-overlay-scrim[data-panel="inspector"] {
+    background: transparent;
+    display: block;
+    inset: 0;
+    position: absolute;
+    z-index: 10;
+  }
+}
+
+@media (max-width: 720px) {
+  .as-overlay-scrim[data-panel="inspector"] {
+    animation: as-scrim-in 160ms ease;
+    background: var(--as-scrim);
+  }
+
+  .as-overlay-scrim[data-panel="catalog"] {
+    animation: as-scrim-in 160ms ease;
+    background: var(--as-scrim);
+    display: block;
+    inset: 0;
+    position: fixed;
+    z-index: 11;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .as-overlay-scrim {
+    animation: none;
+  }
+}

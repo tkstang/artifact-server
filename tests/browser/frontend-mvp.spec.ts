@@ -39,6 +39,12 @@ const reviewWebpBase64 = "UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v
 const reviewGifBase64 = "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 const reviewWebmBase64 = "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAK0EU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggElTbuMU6uEHFO7a1OsggKe7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjIuMTIuMTAxV0GNTGF2ZjYyLjEyLjEwMUSJiEB5AAAAAAAAFlSua8iuAQAAAAAAAD/XgQFzxYj918nP8i2d+ZyBACK1nIN1bmSIgQCGhVZfVlA5g4EBI+ODhAJiWgDgkLCBILqBGJqBAlWwhFW5gQESVMNnQIBzc6BjwIBnyJpFo4dFTkNPREVSRIeNTGF2ZjYyLjEyLjEwMXNz2mPAi2PFiP3Xyc/yLZ35Z8ilRaOHRU5DT0RFUkSHmExhdmM2Mi4yOC4xMDEgbGlidnB4LXZwOWfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDAuNDAwMDAwMDAwAB9DtnVA7eeBAKOrgQAAgIJJg0IAAfABdgA4JBwYSgAAMGAAABDf//Xtp/////2Ecf//+rwAAKOTgQAoAIYAQJKcAFAAAAMgAABDQKOTgQBQAIYAQJKcAE7gAAMgAABDQKOTgQB4AIYAQJKcAFAAAAMgAABDQKOTgQCgAIYAQJKcAE1AAAMgAABDQKOTgQDIAIYAQJKcAFAAAAMgAABDQKOTgQDwAIYAQJKcAE7gAAMgAABDQKOTgQEYAIYAQJKcAFAAAAMgAABDQKOTgQFAAIYAQJKcAEogAAMgAABDQKOTgQFoAIYAQJKcAFAAAAMgAABDQBxTu2uRu4+zgQC3iveBAfGCAavwgQM=";
 
+/** The header keeps Open raw artifact in its More actions menu. */
+async function openRawArtifactFromMenu(fixture: BrowserFixture): Promise<void> {
+  await fixture.page.getByRole("button", {name: "More actions"}).click();
+  await fixture.page.getByRole("menuitem", {name: "Open raw artifact"}).click();
+}
+
 test.describe("Artifact Server frontend MVP", () => {
   test("CMT-015-B CMT-015-F: the Artifact Server review application navigates projects and artifacts", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
@@ -64,6 +70,9 @@ test.describe("Artifact Server frontend MVP", () => {
       expect(legacyReview.status()).toBe(308);
       expect(legacyReview.headers()["location"]).toBe("/review?project=prj_default");
 
+      // Start dark so the theme switch below is observable; a first visit
+      // otherwise follows the OS colour scheme.
+      await fixture.page.emulateMedia({colorScheme: "dark"});
       await localLogin(fixture);
       await fixture.page.goto(`${fixture.server.baseUrl}/review`);
 
@@ -131,6 +140,8 @@ test.describe("Artifact Server frontend MVP", () => {
       ]);
       await fixture.page.keyboard.press("Escape");
       await expect(shortcutMap).toBeHidden();
+      // The workspace inspector opens on Comments; access lives in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       const accessRow = fixture.page.locator(".as-inspector-row").filter({
         hasText: "access",
       });
@@ -141,14 +152,18 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(preview.getByRole("heading", {name: "Review preview content"}))
         .toBeVisible();
 
+      // The visible label is the toggle's name; the instructions describe it.
       const annotateMode = fixture.page.getByRole("button", {
-        name: /^Annotate mode:/u,
+        exact: true,
+        name: "Commenting",
       });
       await expect(annotateMode).toHaveAttribute("aria-pressed", "true");
+      await expect(annotateMode).toHaveAccessibleDescription(/^Click an element or select text to comment/u);
       await preview.locator("#review-native-action").focus();
       await fixture.page.keyboard.press("Escape");
       const interactMode = fixture.page.getByRole("button", {
-        name: /^Interact mode:/u,
+        exact: true,
+        name: "Reading",
       });
       await expect(interactMode).toHaveAttribute("aria-pressed", "false");
       await preview.locator("#review-native-action").click();
@@ -457,11 +472,11 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.locator(".as-preview-panel").focus();
       await fixture.page.keyboard.press("f");
       await expect(fixture.page.getByRole("button", {name: "Exit full screen"})).toBeVisible();
-      await expect(fixture.page.getByRole("button", {name: "Annotate mode", exact: true}))
+      await expect(fixture.page.getByRole("button", {name: "Commenting", exact: true}))
         .toHaveAttribute("aria-pressed", "true");
       await fixture.page.keyboard.press("Escape");
       const focusInteractMode = fixture.page.getByRole("button", {
-        name: "Interact mode",
+        name: "Reading",
         exact: true,
       });
       await expect(focusInteractMode).toHaveAttribute("aria-pressed", "false");
@@ -605,7 +620,7 @@ test.describe("Artifact Server frontend MVP", () => {
         .analyze();
       expect(accessibility.violations).toEqual([]);
 
-      await fixture.page.getByRole("button", {name: /^Interact mode:/u}).click();
+      await fixture.page.getByRole("button", {name: "Reading", exact: true}).click();
       await preview.locator("#review-theme-target").click();
       const themedCommentPopover = reviewFrame.locator('[data-comment-popover="true"]');
       await expect(themedCommentPopover).toBeVisible();
@@ -858,7 +873,9 @@ test.describe("Artifact Server frontend MVP", () => {
         })}`,
       );
 
-      const standardDownload = fixture.page.getByRole("link", {
+      // The header keeps Download in its More actions menu.
+      await fixture.page.getByRole("button", {name: "More actions"}).click();
+      const standardDownload = fixture.page.getByRole("menuitem", {
         exact: true,
         name: "Download",
       });
@@ -1097,6 +1114,8 @@ test.describe("Artifact Server frontend MVP", () => {
         })}`,
       );
 
+      // The workspace inspector opens on Comments; the access row is in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       const headerActions = fixture.page.locator(".as-preview-header__actions");
       const headerShare = headerActions.getByRole("button", {exact: true, name: "Share"});
       const fullScreen = headerActions.getByRole("button", {name: "Full screen"});
@@ -1117,14 +1136,25 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(share.getByRole("heading", {name: "Share fixture"})).toBeVisible();
       await expect(share.getByText("Exact version · Version 1", {exact: true})).toBeVisible();
       await expect(share.getByText(exactReviewLink.toString(), {exact: true})).toBeVisible();
-      await expect(share.getByText(published.body.links.artifact, {exact: true})).toBeVisible();
       await expect(share.getByText(
         "People with access to this Artifact Server can review this exact version.",
         {exact: true},
       )).toBeVisible();
+      // The moving and raw links are secondary: they wait behind a disclosure
+      // so the exact Review link is the one thing Share leads with.
+      await expect(share.getByText(published.body.links.artifact, {exact: true})).toBeHidden();
+      const moreWays = share.getByRole("button", {name: "More ways to share"});
+      await expect(moreWays).toHaveAttribute("aria-expanded", "false");
+      await moreWays.click();
+      await expect(moreWays).toHaveAttribute("aria-expanded", "true");
+      await expect(share.getByText(published.body.links.artifact, {exact: true})).toBeVisible();
       await expect(share.getByText(published.body.links.version, {exact: true})).toBeVisible();
       await expect(share.getByText("Moves when a new version is published", {exact: true}))
         .toBeVisible();
+      // Contrast is measured on the settled popover, not mid-fade.
+      await share.evaluate((element) => Promise.all(
+        element.getAnimations({subtree: true}).map((animation) => animation.finished),
+      ));
       const shareAccessibility = await new AxeBuilder({page: fixture.page})
         .exclude(".as-artifact-frame")
         // Base UI gives its invisible Safari focus guards a button role only
@@ -1352,7 +1382,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.getByRole("button", {name: /Public fixture/u}).click();
       const [publicPage] = await Promise.all([
         fixture.context.waitForEvent("page"),
-        fixture.page.getByRole("button", {name: "Open raw artifact"}).click(),
+        openRawArtifactFromMenu(fixture),
       ]);
       await expect(publicPage.locator("body")).toContainText("public browser content");
       await publicPage.close();
@@ -1360,7 +1390,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.getByRole("button", {name: /Private fixture/u}).click();
       const [privatePage] = await Promise.all([
         fixture.context.waitForEvent("page"),
-        fixture.page.getByRole("button", {name: "Open raw artifact"}).click(),
+        openRawArtifactFromMenu(fixture),
       ]);
       await expect(privatePage.locator("body")).toContainText("private browser content");
       await privatePage.close();
@@ -1412,6 +1442,8 @@ test.describe("Artifact Server frontend MVP", () => {
       await localLogin(fixture);
       await expect(fixture.page.getByRole("heading", {name: "Workflow fixture"})).toBeVisible();
 
+      // The workspace inspector opens on Comments; tags live in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       await fixture.page.getByRole("button", {name: "Edit tags"}).click();
       await fixture.page
         .getByRole("textbox", {name: "Tags"})
@@ -1432,8 +1464,9 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(fixture.page.getByText("current", {exact: true})).toBeVisible();
 
       await fixture.page.getByRole("tab", {name: "Activity"}).click();
-      await expect(fixture.page.getByText("Restored version")).toBeVisible();
-      await expect(fixture.page.getByText("Replaced tags").first()).toBeVisible();
+      // Activity says what happened in plain words, with the version it made current.
+      await expect(fixture.page.getByText("Made version 1 current")).toBeVisible();
+      await expect(fixture.page.getByText("Changed tags").first()).toBeVisible();
       await expect(fixture.page.getByRole("button", {name: "Load more"})).toBeVisible();
       await expect(fixture.page.locator(".as-activity-list > li")).toHaveCount(50);
       await fixture.page.getByRole("button", {name: "Load more"}).click();
@@ -1450,7 +1483,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await memberRow.getByRole("button", {name: "Deactivate"}).click();
       await fixture.page.getByRole("button", {name: "Deactivate member"}).click();
       await closeTopDialog(fixture.page);
-      await expect(memberRow.getByText("inactive", {exact: true})).toBeVisible();
+      await expect(memberRow.getByText("Inactive", {exact: true})).toBeVisible();
 
       await fixture.page.getByRole("link", {name: "API keys"}).click();
       await fixture.page.getByRole("button", {name: "Issue API key"}).click();
@@ -1471,6 +1504,11 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(secret).toBeVisible();
       const secretValue = await secret.textContent();
       expect(secretValue).toMatch(/^as_key_/u);
+      // The one-time secret survives Escape and an outside click until the
+      // administrator copies it or confirms storing it.
+      await fixture.page.keyboard.press("Escape");
+      await fixture.page.mouse.click(4, 4);
+      await expect(secret).toBeVisible();
       await fixture.page.getByRole("button", {name: "I stored it"}).click();
       await expect(fixture.page.getByText(secretValue ?? "missing-secret")).toHaveCount(0);
       expect(await browserStorage(fixture.page)).toEqual({
@@ -1489,6 +1527,7 @@ test.describe("Artifact Server frontend MVP", () => {
       await fixture.page.goto(
         `${fixture.server.baseUrl}/review?project=prj_default&artifact=${first.body.artifact.id}`,
       );
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       await fixture.page.getByRole("button", {name: "Delete artifact"}).click();
       await fixture.page.getByRole("textbox", {name: "Artifact name"}).fill("Workflow fixture");
       await fixture.page.getByRole("button", {name: "Delete artifact", exact: true}).last().click();

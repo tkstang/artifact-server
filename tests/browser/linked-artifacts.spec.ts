@@ -173,6 +173,8 @@ test.describe("Linked artifacts", () => {
       await expect(
         fixture.page.getByRole("heading", {name: "Quarterly report"}),
       ).toBeVisible();
+      // The workspace inspector opens on Comments; the binding is in Details.
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       await expect(fixture.page.getByRole("heading", {name: "Linked source"})).toBeVisible();
       await expect(fixture.page.getByText(sourcePath, {exact: true})).toBeVisible();
       await expect(fixture.page.getByText("In sync", {exact: true})).toBeVisible();
@@ -198,7 +200,8 @@ test.describe("Linked artifacts", () => {
       await expect(
         fixture.page.getByText("In sync", {exact: true}),
       ).toBeVisible({timeout: 30_000});
-      await expect(fixture.page.getByRole("tab", {name: "Versions 2"})).toBeVisible();
+      await fixture.page.getByRole("tab", {name: "Versions"}).click();
+      await expect(fixture.page.locator(".as-version-list li")).toHaveCount(2);
 
       await expect(async () => {
         expect(await versionCount(fixture, linked.artifact.id)).toBe(2);
@@ -207,10 +210,10 @@ test.describe("Linked artifacts", () => {
       // The capture is in the artifact's own attributed history.
       await fixture.page.getByRole("tab", {name: "Activity"}).click();
       await expect(
-        fixture.page.getByText("Captured linked file", {exact: true}),
+        fixture.page.getByText("Captured the linked file as version 2", {exact: true}),
       ).toBeVisible();
       await expect(
-        fixture.page.getByText("Linked source file", {exact: true}),
+        fixture.page.getByText("Linked a source file", {exact: true}),
       ).toBeVisible();
 
       // Reviewing the current version offers the live file beside the captured
@@ -222,6 +225,7 @@ test.describe("Linked artifacts", () => {
       await expect(
         fixture.page.getByRole("heading", {name: "Quarterly report"}),
       ).toBeVisible();
+      await fixture.page.getByRole("tab", {name: "Details"}).click();
       const liveButton = fixture.page.getByRole("button", {name: "Open live file"});
       await expect(liveButton).toBeVisible();
 

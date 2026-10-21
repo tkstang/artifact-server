@@ -12,7 +12,7 @@ owned by the existing services.
 `ReviewPreview` recognizes `text/markdown` (including MIME parameters), and `.md`
 files declared as `text/plain`. It reads the exact version file, obtains that
 version's existing content-domain preview lease, and derives a complete HTML
-review document with `renderMarkdown`. Markdown uses the same Annotate/Interact controls and focus layout as HTML.
+review document with `renderMarkdown`. Markdown uses the same Commenting/Reading toggle and focus layout as HTML.
 The same HtmlViewer used for HTML renders it in an opaque-origin iframe with `sandbox="allow-scripts"`. The viewer injects its existing trusted annotation bridge. Documents containing
 Mermaid also include a trusted, self-contained diagram runtime; neither script
 is part of the stored original artifact.
@@ -72,58 +72,58 @@ Code uses distinct, readable syntax colors in both themes. Ordinary quotes remai
 simple left-rule quotations; image titles become escaped captions. No remote
 fonts or style-only dependencies were added. Contents is collapsed initially.
 Markdown focus mode reserves space above the viewer for the existing toolbar,
-including its two-row narrow layout. The application palette remains unchanged.
+including its two-row narrow layout. The application shares the same warm
+neutral palette, and documents follow its light or dark theme.
 
 ## Static Mermaid diagrams
 
-A `mermaid` fence renders as SVG with pinned `@mermaid-js/tiny` 12.1.0. Its IIFE
-bundle is loaded lazily only when needed and serialized into the existing opaque
-viewer, where it renders without an app API client or credentials. Strict security
-and non-HTML labels are fixed by the integration. Authored configuration, HTML,
-click/link directives, custom style directives, image/icon definitions and resource
-URLs are outside this static diagram contract and produce a readable source
-fallback. Invalid syntax also falls back without breaking the document. Sources
-are bounded to 20,000 characters and 200 edges by the renderer. Generated SVG
-loses active/link/resource elements and event attributes; its styles are checked
-for external resource syntax. No diagram callback is bound. Theme changes rerender
-the diagram in the isolated viewer. Wide diagrams scroll within their figure to
-preserve labels; source remains available in a disclosure.
+A `mermaid` fence renders as SVG with pinned [Pele](https://pele.run) 1.8.0
+(MIT, `pele` on npm), a dependency-free renderer for Mermaid syntax. Its global
+bundle (702 kB, 265 kB gzip) loads lazily, only for documents with a diagram, and is
+serialized into the existing opaque viewer, where it renders without an app API
+client or credentials. Ordinary Markdown never loads it.
+
+The review fixes every renderer option; diagram authors never supply options or
+config. Front matter and `%%{init}%%` directives would override those settings, so
+a diagram that carries them keeps its source instead. Pele's own defaults decide the
+rest, per its [security guidance](https://pele.run/security):
+
+- Labels are escaped text. Pele emits no scripts, event handlers, HTML labels or
+  `foreignObject`; HTML in a label is stripped.
+- Links keep Pele's default schemes (`http`, `https`, `mailto`, `tel` and relative
+  URLs). `javascript:`, `data:`, `vbscript:`, network paths and click callbacks are
+  dropped. A surviving link opens like a Markdown link: a new tab, `noopener
+  noreferrer`, no referrer.
+- `style`, `classDef` and `linkStyle` apply through Pele's style filter; a style it
+  can't accept, such as `url(...)`, is a syntax error.
+- The frame's policy allows remote images, so a diagram that would load one (an
+  `img:` shape) keeps its source, as Markdown images do. No icon or math resolver is
+  installed: `fa:` icon tokens are omitted and TeX stays text.
+- Sources are bounded to 20,000 characters and 5,000 edges.
+
+There is no extra SVG sanitizer or worker: Pele filters the output and the opaque
+sandbox stays in place. Invalid syntax, unsupported diagram types and size limits
+also fall back without breaking the document. The fallback states why in text (for
+example, the syntax error's line and column, with Pele's snippet) and shows the
+original source. Error messages can quote diagram text, so they are only ever set
+as text.
+
+Colours come from CSS variables (`--pele-*` on `.md-mermaid`), mapped to the
+document palette in each theme, so a theme change restyles the same SVG without
+redrawing it. A width change redraws it, because Pele can wrap labels or turn a wide
+flowchart vertical on narrow screens. Wide diagrams scroll within their figure, and
+the source stays available in a disclosure.
 
 The Mermaid figure retains the fence's stable source-bearing ID. Pinpoint comments
 on the figure preserve the rendered labels as quoted text plus the exact fence
 block's source lines/section and saved version/path. This is block-level diagram
-feedback, not per-node provenance. Diagram styles are outside the figure so CSS
-does not pollute its quote. The tiny distribution excludes mindmap, architecture,
-KaTeX and ELK features; unsupported syntax remains readable as source. Its optional
-2.83 MB (763 kB gzip) bundle is a tradeoff, not loaded for ordinary Markdown.
+feedback, not per-node provenance. Pele's styles are inline on the SVG, so CSS
+does not pollute the quote.
 
-The upstream [Mermaid usage/security documentation](https://mermaid.js.org/config/usage.html)
-describes the tiny IIFE and strict security mode. Authored HTML remains disabled
-independently of Mermaid, and no CSP/sandbox/permission grants were changed.
-
-### Statement policy after review
-
-Unsupported `style`, `classDef`, `linkStyle` and `click` statements must fall back
-regardless of newline or semicolon placement. Mermaid 12.1.0's Jison parser tokens
-are checked before SVG rendering using the pinned `mermaidAPI.getDiagramFromText`
-result. This distinguishes actual directives from quoted labels, comments and
-special text modes (accessibility titles/descriptions and direction statements).
-The checker uses the parsed/preprocessed text and the parser's own context and
-symbol table; it does not invent a second complete Mermaid grammar. Token scanning
-has an input-derived completion bound, and a missing expected flowchart lexer
-fails closed. Parsing and policy checking still run only in the opaque viewer.
-
-This deliberately couples policy to the pinned parser's internal lexer/symbol
-shape. Mermaid upgrades must retain the focused normal/hostile browser checks.
-Non-Jison diagram types retain conservative source screening; this is not a
-comprehensive grammar proof for every Mermaid diagram type. That fallback detects
-newline/semicolon statement boundaries while preserving double-quoted label text
-and applying the pinned whole-line comment preprocessing. It does not interpret
-literal backslashes as quote escapes or bare backticks as string delimiters.
-
-The pin-specific behavior is backed by the [flowchart grammar](https://github.com/mermaid-js/mermaid/blob/mermaid%4012.1.0/packages/mermaid/src/diagrams/flowchart/parser/flow.jison),
-[comment preprocessing](https://github.com/mermaid-js/mermaid/blob/mermaid%4012.1.0/packages/mermaid/src/diagram-api/comments.ts)
-and [parsed diagram API](https://github.com/mermaid-js/mermaid/blob/mermaid%4012.1.0/packages/mermaid/src/Diagram.ts).
+Pele replaced `@mermaid-js/tiny` 12.1.0 (2.83 MB, 763 kB gzip). That integration
+needed a post-render SVG sanitizer and a check of Mermaid's internal parser tokens
+to refuse styles and click directives; both are gone. No CSP, sandbox or permission
+grants were changed.
 
 ## Deferred
 
@@ -174,8 +174,9 @@ In another terminal, publish this design note as a Markdown artifact:
 pnpm artifactserver publish docs/markdown-review.md --data .artifact-server/markdown-review-demo --server http://127.0.0.1:8799 --name "Markdown review demo"
 ```
 
-Open the returned review link. Use Interact mode for document navigation and
-Annotate mode for comments. The data path is gitignored and local to this worktree.
+Open the returned review link. Contents links move through the document in
+either mode; switch to Reading to use other links and controls, and to
+Commenting to add comments. The data path is gitignored and local to this worktree.
 The automated synthetic v1/comment/v2 demonstration remains in the browser test.
 
 To regenerate the visual evidence using only the local harness:

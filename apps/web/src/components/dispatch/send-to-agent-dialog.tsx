@@ -11,7 +11,7 @@ import {
   maximumDispatchNoteCharacters,
 } from "@/components/dispatch/dispatch-limits";
 import type {DispatchFeedback} from "@/components/dispatch/dispatch-toast";
-import {PresenceGlyph, presenceRing} from "@/components/dispatch/presence-avatar";
+import {PresenceGlyph, presenceRing, type PresenceRing} from "@/components/dispatch/presence-avatar";
 import {Button} from "@/components/ui/button";
 import {
   Dialog,
@@ -26,9 +26,10 @@ import {Label} from "@/components/ui/label";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Textarea} from "@/components/ui/textarea";
 import {errorMessage, formatRelativeTime} from "@/lib/presentation";
+import {cn} from "@/lib/utils";
 
-function annotationCount(count: number): string {
-  return count === 1 ? "1 annotation" : `${count} annotations`;
+function commentCount(count: number): string {
+  return count === 1 ? "1 comment" : `${count} comments`;
 }
 
 function defaultAgentStorageKey(principalId: string, projectId: string): string {
@@ -122,6 +123,7 @@ async function createDispatchBatches(
  * split into ordered batches while one human click remains the initiating act.
  */
 export function SendToAgentControl({
+  agentGlyph = true,
   agents,
   buttonSize = "xs",
   buttonVariant = "outline",
@@ -134,11 +136,14 @@ export function SendToAgentControl({
   projectId,
   reasonDisplay = "inline",
   resolveBundle,
+  unavailableReason = null,
 }: {
+  /** Whether the main button repeats the destination agent's avatar. */
+  readonly agentGlyph?: boolean;
   /** The polled presence list, or null while the surface is reading it. */
   readonly agents: readonly AgentPresence[] | null;
   readonly buttonSize?: "default" | "sm" | "xs";
-  readonly buttonVariant?: "default" | "outline" | "secondary";
+  readonly buttonVariant?: "default" | "ghost" | "outline" | "secondary";
   readonly feedback: DispatchFeedback;
   /** Label used before the first destination is chosen. */
   readonly label: string;
@@ -151,6 +156,11 @@ export function SendToAgentControl({
   /** Whether this control repeats its disabled-state explanation beside the buttons. */
   readonly reasonDisplay?: "hidden" | "inline";
   readonly resolveBundle: () => Promise<DispatchBundle>;
+  /**
+   * Why `agents` cannot be trusted right now (a failed presence poll). While
+   * set, nothing sends: a stale "connected" must not stand in for a live one.
+   */
+  readonly unavailableReason?: string | null;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -205,13 +215,15 @@ export function SendToAgentControl({
     : null;
   const noAgents = knownConnected !== null && knownConnected.length === 0;
   const nothingToSend = openCount === 0;
-  const mainReason = nothingToSend
-    ? "Nothing open to send."
-    : disconnectedDefaultName !== null
-      ? `${disconnectedDefaultName} disconnected — pick another`
-      : noAgents
-        ? "No agent connected — connect one to send."
-        : null;
+  const mainReason = unavailableReason !== null
+    ? unavailableReason
+    : nothingToSend
+      ? "Nothing open to send."
+      : disconnectedDefaultName !== null
+        ? `${disconnectedDefaultName} disconnected — pick another`
+        : noAgents
+          ? "No agent connected — connect one to send."
+          : null;
   const mainLabel = mainAgent === null
     ? disconnectedDefaultName === null || oneAgentLabel === undefined
       ? label
@@ -219,6 +231,10 @@ export function SendToAgentControl({
     : oneAgentLabel === undefined
       ? label
       : oneAgentLabel(mainAgent.displayName);
+  // While sending is unavailable (agent status unknown after a failed
+  // check), no ring claims a live state: motion is only for live states.
+  const ringOf = (agent: AgentPresence): PresenceRing =>
+    unavailableReason === null ? presenceRing(agent) : "disconnected";
   const trimmedNote = note.trim();
   const noteTooLong = trimmedNote.length > maximumDispatchNoteCharacters;
   const connectedDialogAgents = dialogAgents.filter((agent) => agent.connected);
@@ -363,7 +379,8 @@ export function SendToAgentControl({
   const menuAgents = knownConnected?.filter((agent) =>
     mainAgent === null || agent.id !== mainAgent.id
   ) ?? [];
-  const caretDisabled = agents === null || noAgents || nothingToSend || quickPending;
+  const caretDisabled = agents === null || noAgents || nothingToSend || quickPending
+    || unavailableReason !== null;
 
   return (
     <div className="as-send-to-agent inline-flex flex-wrap items-center gap-2">
@@ -384,11 +401,11 @@ export function SendToAgentControl({
               aria-hidden
               className="size-3 animate-spin rounded-full border border-current border-t-transparent motion-reduce:animate-none"
             />
-          ) : mainAgent === null ? null : (
+          ) : mainAgent === null || !agentGlyph ? null : (
             <PresenceGlyph
               className="-my-1"
               kind={mainAgent.kind}
-              ring={presenceRing(mainAgent)}
+              ring={ringOf(mainAgent)}
             />
           )}
           <span className="min-w-0 truncate">
@@ -423,7 +440,7 @@ export function SendToAgentControl({
                     }}
                     type="button"
                   >
-                    <PresenceGlyph kind={agent.kind} ring={presenceRing(agent)} />
+                    <PresenceGlyph kind={agent.kind} ring={ringOf(agent)} />
                     <span className="min-w-0">
                       <strong className="block truncate text-sm">{agent.displayName}</strong>
                       <span className="block truncate text-xs text-muted-foreground">
@@ -435,7 +452,11 @@ export function SendToAgentControl({
               </div>
             )}
             <button
-              className="border-t p-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
+              className={cn(
+                "p-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary",
+                // A divider only separates the note from agents listed above it.
+                menuAgents.length > 0 && "border-t",
+              )}
               onClick={() => {
                 setMenuOpen(false);
                 changeNoteOpen(true);
@@ -458,7 +479,7 @@ export function SendToAgentControl({
           <DialogHeader>
             <DialogTitle>Send with a note</DialogTitle>
             <DialogDescription>
-              The annotations in this send leave the open list when it succeeds.
+              The comments in this send leave the open list when it succeeds.
               Undo can call them back while the agent has not completed the send.
             </DialogDescription>
           </DialogHeader>
@@ -476,7 +497,7 @@ export function SendToAgentControl({
           ) : (
             <>
               <fieldset className="grid gap-2">
-                <legend className="mb-2 text-xs font-semibold tracking-wide uppercase">
+                <legend className="mb-2 text-[0.8125rem] font-semibold">
                   Connected agents
                 </legend>
                 {dialogAgents.map((agent) => (
@@ -496,7 +517,7 @@ export function SendToAgentControl({
                     <PresenceGlyph
                       className="mt-0.5"
                       kind={agent.kind}
-                      ring={presenceRing(agent)}
+                      ring={ringOf(agent)}
                     />
                     <span className="min-w-0">
                       <span className="block font-heading text-sm font-semibold">
@@ -548,7 +569,7 @@ export function SendToAgentControl({
                 onClick={() => void sendWithNote()}
                 type="button"
               >
-                {pending ? "Sending…" : `Send ${annotationCount(threadIds.length)}`}
+                {pending ? "Sending…" : `Send ${commentCount(threadIds.length)}`}
               </Button>
             )}
           </DialogFooter>

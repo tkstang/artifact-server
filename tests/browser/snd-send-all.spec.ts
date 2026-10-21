@@ -1,3 +1,4 @@
+import {AxeBuilder} from "@axe-core/playwright";
 import {expect, test, type Browser} from "@playwright/test";
 
 import {
@@ -123,12 +124,22 @@ test.describe("Review send-all", () => {
         name: "Send all open (101) to builder",
       })).toBeVisible();
       await expect(page.locator(".as-comment-card")).toHaveCount(101);
+      // The primary action stays readable in both themes: its label keeps the
+      // button's own foreground instead of inheriting the page ink.
+      const sendAllContrast = () => new AxeBuilder({page})
+        .include(".as-comments__send-all")
+        .withRules(["color-contrast"])
+        .analyze();
+      expect((await sendAllContrast()).violations).toEqual([]);
+      await page.getByRole("button", {name: /^Use (?:light|dark) theme$/u}).click();
+      expect((await sendAllContrast()).violations).toEqual([]);
+      await page.getByRole("button", {name: /^Use (?:light|dark) theme$/u}).click();
       const preview = page.frameLocator(".as-artifact-frame")
         .frameLocator("iframe");
       await expect(preview.locator("button[data-plannotator-marker]")).toHaveCount(1);
 
       await page.getByRole("button", {name: "Send all open (101) to builder"}).click();
-      await expect(page.getByText("Sent 101 threads to builder")).toBeVisible();
+      await expect(page.getByText("Sent 101 comments to builder")).toBeVisible();
       await expect(page.locator(".as-comment-card")).toHaveCount(0);
       await expect(preview.locator("button[data-plannotator-marker]")).toHaveCount(0);
 
@@ -267,7 +278,7 @@ test.describe("Review send-all", () => {
         name: "Choose agent or send with a note",
       }).first().click();
       await page.getByRole("button", {name: "replacement /work/replacement"}).click();
-      await expect(page.getByText("Sent 1 thread to replacement")).toBeVisible();
+      await expect(page.getByText("Sent 1 comment to replacement")).toBeVisible();
 
       // A clean disconnect deletes the registration. The dead id is not a
       // disconnected default: it is forgotten, so the same bridge name under
