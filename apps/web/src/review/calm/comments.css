@@ -397,3 +397,13 @@
   overflow: hidden;
   resize: none;
 }
+
+/* A draft restored from a failed in-document save quotes its passage, like
+   a card, and its failure notice sits with it. */
+.as-comment-composer__quote {
+  margin: 0 0 0.5rem;
+}
+
+.as-comments [data-new-thread-composer] > .as-notice {
+  margin: 0.5rem 0 0;
+}

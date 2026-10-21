@@ -133,9 +133,15 @@ test.describe("Review shell", () => {
 
       const composer = fixture.page.getByLabel("Add a comment");
       await expect(composer).toHaveValue("Name the owner of this heading.");
+      // The restored draft says it will post anchored, and why it is back.
+      const newThread = fixture.page.locator("[data-new-thread-composer]");
+      await expect(newThread.locator("blockquote")).toHaveText("Shell preview content");
+      await expect(newThread.getByRole("alert"))
+        .toHaveText("Can't reach Artifact Server. Check your connection and try again.");
       expect(await listThreadsOverApi(fixture, published.body.artifact.id)).toHaveLength(1);
       await fixture.page.getByRole("button", {name: "Post comment"}).click();
       await expect(composer).toHaveValue("");
+      await expect(newThread.locator("blockquote")).toHaveCount(0);
       await expect(async () => {
         const stored = await listThreadsOverApi(fixture, published.body.artifact.id);
         expect(stored).toHaveLength(1);

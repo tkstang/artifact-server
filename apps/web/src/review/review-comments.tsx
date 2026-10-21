@@ -27,7 +27,7 @@ import {
 } from "@/components/comments/comment-anchor";
 import {CommentAuthor} from "@/components/comments/comment-author";
 import {CommentComposer} from "@/components/comments/comment-composer";
-import {useCommentDraft} from "@/components/comments/comment-drafts";
+import {readDraftAnchor, useCommentDraft} from "@/components/comments/comment-drafts";
 import {maximumCommentBodyCharacters} from "@/components/comments/comment-limits";
 import {
   mergeThreads,
@@ -183,6 +183,11 @@ export interface ReviewCommentSession {
   /** The last mutation failure, shown beside the threads it concerns. */
   readonly error: Error | null;
   /**
+   * The last mutation failure when it was a new comment's save: shown next
+   * to the new-comment composer, where its draft is restored.
+   */
+  readonly createError: Error | null;
+  /**
    * The last full read's failure, cleared by the next successful read. With
    * no threads loaded it means the conversation is unknown, not empty.
    */
@@ -230,6 +235,9 @@ export function useReviewComments({
   const [unanchoredIds, setUnanchoredIds] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  // The failure a new comment's save raised; it is the current error only
+  // while no later mutation has replaced it.
+  const [createFailure, setCreateFailure] = useState<Error | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const watermarkRef = useRef<string | null>(null);
   const reloadGenerationRef = useRef(0);
@@ -370,9 +378,9 @@ export function useReviewComments({
       }
       return true;
     } catch (caught) {
-      setError(
-        caught instanceof Error ? caught : new Error("Comment creation failed."),
-      );
+      const failure = caught instanceof Error ? caught : new Error("Comment creation failed.");
+      setCreateFailure(failure);
+      setError(failure);
       return false;
     }
   }, [artifactId, onVersionChanged, ownership, projectId, reload, versionId]);
@@ -466,6 +474,7 @@ export function useReviewComments({
     annotations,
     artifactId,
     changeState,
+    createError: error !== null && error === createFailure ? error : null,
     createReply,
     deleteReply,
     error,
@@ -496,14 +505,20 @@ function NewThreadComposer({
   readonly session: ReviewCommentSession;
   readonly versionId: string;
 }) {
-  const draft = useCommentDraft({
-    artifactId,
-    principalId,
-    threadId: null,
-    versionId,
+  const draftContext = {artifactId, principalId, threadId: null, versionId};
+  const draft = useCommentDraft(draftContext);
+  // A draft restored from a failed in-document save keeps its anchor and
+  // posts anchored; quote the passage so it does not read as a general one.
+  const [quote, setQuote] = useState(() => {
+    const kept = draft.restored ? readDraftAnchor(draftContext) : null;
+    const keptAnchor = kept === null ? null : reviewAnchorSchema.safeParse(kept.anchor);
+    return keptAnchor?.success === true ? quotedPassage(keptAnchor.data) : "";
   });
   return (
     <div data-new-thread-composer>
+      {quote === "" ? null : (
+        <blockquote className="as-comment-card__quote as-comment-composer__quote">{quote}</blockquote>
+      )}
       <CommentComposer
         cancelLabel={null}
         collapsible
@@ -516,15 +531,24 @@ function NewThreadComposer({
         maximumCharacters={maximumCommentBodyCharacters}
         onBodyChange={draft.onBodyChange}
         onCancel={null}
-        onDiscardDraft={draft.onDiscard}
+        onDiscardDraft={() => {
+          draft.onDiscard();
+          setQuote("");
+        }}
         onSubmit={async (body, idempotencyKey) => {
           const saved = await session.submit(body, null, null, idempotencyKey);
-          if (saved) draft.onPosted();
+          if (saved) {
+            draft.onPosted();
+            setQuote("");
+          }
           return saved;
         }}
         placeholder="Comment on the whole document…"
         submitLabel="Post comment"
       />
+      {session.createError === null ? null : (
+        <p className="as-comments__error as-notice" role="alert">{failureMessage(session.createError)}</p>
+      )}
     </div>
   );
 }
@@ -743,6 +767,8 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
   // A failed first read leaves the conversation unknown: no count, list or
   // empty state may stand in for it. A failed later read keeps what loaded.
   const readFailed = session.loadError !== null && session.threads.length === 0;
+  const newThreadComposerShown = canComment && !readFailed && versionId !== null
+    && session.artifactId !== null;
   const sentReadFailed = sentError !== null && sentThreads.length === 0;
   const agentWork = agentWorkOf(sentThreads, dispatchByThread);
   // Commenting keys are service principals too, so only an author whose
@@ -844,7 +870,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
           Comments are read-only for this account or archived project.
         </p>
       )}
-      {session.error === null ? null : (
+      {session.error === null || (session.createError !== null && newThreadComposerShown) ? null : (
         <p className="as-comments__error as-notice" role="alert">{failureMessage(session.error)}</p>
       )}
       {readFailed ? null : session.loadError === null ? null : (
@@ -884,7 +910,7 @@ export const ReviewCommentsInspector = forwardRef<ReviewCommentsInspectorHandle,
           ))}
         </nav>
       )}
-      {canComment && !readFailed && versionId !== null && session.artifactId !== null ? (
+      {newThreadComposerShown && versionId !== null && session.artifactId !== null ? (
         <NewThreadComposer
           artifactId={session.artifactId}
           key={`${session.artifactId}-${versionId}`}
