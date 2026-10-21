@@ -196,12 +196,64 @@ body {
   color: var(--as-love);
 }
 
-/* A pressed viewer control reads in the accent on its own wash, so its
-   label keeps AA contrast in both themes. */
-.as-focus-controls__button[data-active="true"] {
+/* The focus bar is one floating surface holding the same quiet ghost
+   buttons as the workspace header. A pressed control (Commenting, Comments)
+   reads in the accent on its own wash, so its label keeps AA contrast in
+   both themes. */
+.as-focus-controls {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-lg);
+  box-shadow: var(--as-shadow-2);
+  gap: 0.125rem;
+  padding: 0.25rem;
+}
+
+.as-focus-controls .as-focus-controls__button,
+.as-focus-controls .as-focus-controls__collapse {
+  backdrop-filter: none;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--as-subtle);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  min-height: 2rem;
+}
+
+.as-focus-controls .as-focus-controls__button:hover:not(:disabled),
+.as-focus-controls .as-focus-controls__collapse:hover {
+  background: var(--as-hover);
+  border-color: transparent;
+  color: var(--as-text);
+}
+
+.as-focus-controls .as-focus-controls__button[data-active="true"],
+.as-focus-controls .as-focus-controls__button[data-active="true"]:hover:not(:disabled) {
   background: var(--as-iris-soft);
-  border-color: color-mix(in oklab, var(--as-iris) 40%, var(--as-border));
+  border-color: transparent;
   color: var(--as-iris);
+}
+
+.as-focus-controls__count {
+  background: var(--as-surface-raised);
+  border-radius: 999px;
+  color: var(--as-subtle);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  min-height: 1.1rem;
+  min-width: 1.1rem;
+  padding: 0 0.35rem;
+}
+
+/* Collapsed, only the restore tab floats: it keeps the bar's surface. */
+.as-focus-controls__restore {
+  backdrop-filter: none;
+  background: var(--as-surface);
+  border-color: var(--as-border);
+  box-shadow: var(--as-shadow-2);
+  color: var(--as-subtle);
 }
 
 /* Document identity: the full title (up to two lines), its version and when
@@ -314,14 +366,10 @@ body {
 .as-focus-controls__identity {
   align-items: center;
   align-self: stretch;
-  background: var(--as-surface);
-  border: 1px solid var(--as-border);
-  border-radius: var(--as-radius);
-  box-shadow: var(--as-shadow-2);
   display: flex;
   gap: 0.45rem;
   min-width: 0;
-  padding: 0 0.4rem 0 0.65rem;
+  padding: 0 0.5rem 0 0.5rem;
 }
 
 .as-focus-controls__identity strong {
