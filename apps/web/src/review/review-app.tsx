@@ -88,6 +88,14 @@ import {useWebmcp, type WebmcpBindings} from "./webmcp.tsx";
 
 export type ReviewTheme = "dawn" | "moon";
 type InspectorTab = "activity" | "comments" | "compare" | "details" | "files" | "versions";
+/** Inspector tabs in visual order; Compare joins the end when a comparison exists. */
+const inspectorTabOrder: readonly InspectorTab[] = [
+  "comments",
+  "details",
+  "files",
+  "versions",
+  "activity",
+];
 type ArtifactListLoadResult = "failed" | "loaded" | "skipped";
 type CatalogCommentFilter = "all" | "with" | "without";
 type CatalogRefreshState = "complete" | "idle" | "loading";
@@ -2065,6 +2073,25 @@ function ArtifactReview({
               aria-label="Artifact inspector"
               className="as-tabs"
               data-overflow={inspectorTabOverflow}
+              onKeyDown={(event) => {
+                const tabs: readonly InspectorTab[] = comparison === null
+                  ? inspectorTabOrder
+                  : [...inspectorTabOrder, "compare"];
+                const index = tabs.indexOf(inspectorTab);
+                const next = event.key === "ArrowRight"
+                  ? tabs[(index + 1) % tabs.length]
+                  : event.key === "ArrowLeft"
+                    ? tabs[(index - 1 + tabs.length) % tabs.length]
+                    : event.key === "Home"
+                      ? tabs[0]
+                      : event.key === "End"
+                        ? tabs.at(-1)
+                        : undefined;
+                if (next === undefined) return;
+                event.preventDefault();
+                setInspectorTab(next);
+                document.getElementById(`review-inspector-tab-${next}`)?.focus();
+              }}
               ref={inspectorTabListRef}
               role="tablist"
             >
@@ -2751,6 +2778,8 @@ function InspectorTabButton({
       id={`review-inspector-tab-${tab}`}
       onClick={onClick}
       role="tab"
+      // Roving focus: the tab list is one stop; arrows, Home and End move within it.
+      tabIndex={active ? 0 : -1}
       type="button"
     >
       {label}

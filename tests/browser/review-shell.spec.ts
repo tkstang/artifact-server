@@ -211,4 +211,41 @@ test.describe("Review shell", () => {
       await stopBrowserFixture(fixture);
     }
   });
+
+  test("CMT-015-B: inspector tabs follow the tabs keyboard pattern and the panel is a keyboard stop", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture);
+      await fixture.page.setViewportSize({height: 900, width: 1440});
+      await localLogin(fixture);
+      await fixture.page.goto(reviewUrl(fixture, published.body.artifact.id, published.body.version.id));
+      const tabs = fixture.page.getByRole("tab");
+      await expect(tabs).toHaveCount(5);
+      const comments = fixture.page.getByRole("tab", {name: /^Comments/u});
+      await comments.click();
+      await expect(fixture.page.locator("[role='tab'][tabindex='0']")).toHaveCount(1);
+
+      await fixture.page.keyboard.press("ArrowRight");
+      const details = fixture.page.getByRole("tab", {name: "Details"});
+      await expect(details).toBeFocused();
+      await expect(details).toHaveAttribute("aria-selected", "true");
+      await fixture.page.keyboard.press("End");
+      await expect(fixture.page.getByRole("tab", {name: "Activity"})).toBeFocused();
+      await fixture.page.keyboard.press("ArrowRight");
+      await expect(comments).toBeFocused();
+      await fixture.page.keyboard.press("ArrowLeft");
+      await expect(fixture.page.getByRole("tab", {name: "Activity"})).toHaveAttribute("aria-selected", "true");
+      await fixture.page.keyboard.press("Home");
+      await expect(comments).toHaveAttribute("aria-selected", "true");
+
+      // Tab leaves the tab list in one step (past Close inspector) for the panel
+      // itself, which a keyboard user can then scroll.
+      await fixture.page.keyboard.press("Tab");
+      await expect(fixture.page.getByRole("button", {name: "Close inspector"})).toBeFocused();
+      await fixture.page.keyboard.press("Tab");
+      await expect(fixture.page.getByRole("tabpanel")).toBeFocused();
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
 });
