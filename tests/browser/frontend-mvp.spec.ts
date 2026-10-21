@@ -1120,11 +1120,18 @@ test.describe("Artifact Server frontend MVP", () => {
       await expect(share.getByRole("heading", {name: "Share fixture"})).toBeVisible();
       await expect(share.getByText("Exact version · Version 1", {exact: true})).toBeVisible();
       await expect(share.getByText(exactReviewLink.toString(), {exact: true})).toBeVisible();
-      await expect(share.getByText(published.body.links.artifact, {exact: true})).toBeVisible();
       await expect(share.getByText(
         "People with access to this Artifact Server can review this exact version.",
         {exact: true},
       )).toBeVisible();
+      // The moving and raw links are secondary: they wait behind a disclosure
+      // so the exact Review link is the one thing Share leads with.
+      await expect(share.getByText(published.body.links.artifact, {exact: true})).toBeHidden();
+      const moreWays = share.getByRole("button", {name: "More ways to share"});
+      await expect(moreWays).toHaveAttribute("aria-expanded", "false");
+      await moreWays.click();
+      await expect(moreWays).toHaveAttribute("aria-expanded", "true");
+      await expect(share.getByText(published.body.links.artifact, {exact: true})).toBeVisible();
       await expect(share.getByText(published.body.links.version, {exact: true})).toBeVisible();
       await expect(share.getByText("Moves when a new version is published", {exact: true}))
         .toBeVisible();

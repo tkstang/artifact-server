@@ -38,3 +38,236 @@
   line-height: 1.5;
   margin: 0;
 }
+
+/*
+ * Share: the exact review link leads with one primary copy and who can
+ * open it; Latest, Raw and the agent prompt sit behind "More ways to share".
+ * Labels are sans, URLs and commands mono; secondary links stack instead of
+ * using a fixed label column.
+ */
+.as-share-popover__header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.as-share-popover__header p {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-share-destination__icon {
+  border-radius: var(--as-radius);
+}
+
+.as-share-overview,
+.as-share-access-editor,
+.as-share-agent-setup {
+  padding: 1rem;
+}
+
+.as-share-link h3,
+.as-share-agent h3,
+.as-share-secondary > h3 {
+  color: var(--as-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.as-share-link > div {
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.as-share-link code,
+.as-share-agent-value code {
+  background: var(--as-surface-raised);
+  border-color: var(--as-border);
+  border-radius: var(--as-radius);
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.as-share-link .as-button--primary {
+  min-height: 2.25rem;
+}
+
+.as-share-access-summary {
+  color: var(--as-muted);
+  margin-top: 0.75rem;
+}
+
+.as-share-access-summary p,
+.as-share-message,
+.as-share-agent > p,
+.as-share-agent-setup > p,
+.as-share-agent-setup section > p,
+.as-share-access-editor > p:first-child,
+.as-share-network-note,
+.as-share-access-warning {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.as-share-access-summary .as-button,
+.as-share-access-editor__actions .as-button {
+  font-size: 0.8125rem;
+  min-height: 2rem;
+}
+
+.as-share-message {
+  border-radius: var(--as-radius);
+}
+
+.as-share-more {
+  border-top: 1px solid var(--as-border);
+  margin-top: 0.85rem;
+  padding-top: 0.35rem;
+}
+
+.as-share-more__toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--as-radius);
+  color: var(--as-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  gap: 0.35rem;
+  margin-left: -0.4rem;
+  min-height: 2rem;
+  padding: 0 0.4rem;
+}
+
+.as-share-more__toggle:hover {
+  background: var(--as-hover);
+}
+
+.as-share-more__toggle svg {
+  color: var(--as-muted);
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+.as-share-secondary {
+  border-top: 0;
+  margin-top: 0.35rem;
+  padding-top: 0;
+}
+
+.as-share-secondary > h3 {
+  margin: 0 0 0.25rem;
+}
+
+.as-share-secondary__row {
+  gap: 0.15rem 0.5rem;
+  grid-template-areas:
+    "label label"
+    "value copy";
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.4rem 0;
+}
+
+.as-share-secondary__row > span {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  grid-area: label;
+}
+
+.as-share-secondary__row strong {
+  font-size: 0.8125rem;
+}
+
+.as-share-secondary__row small {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-share-secondary__row code {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  grid-area: value;
+}
+
+.as-share-secondary__row .as-icon-button {
+  grid-area: copy;
+}
+
+.as-share-agent {
+  margin-top: 0.6rem;
+}
+
+.as-share-agent__actions {
+  flex-wrap: wrap;
+}
+
+.as-share-agent__prompt,
+.as-share-agent__setup,
+.as-share-agent-value button {
+  background: var(--as-surface);
+  border-color: var(--as-border-strong);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.as-share-agent__prompt,
+.as-share-agent__setup {
+  border-radius: var(--as-radius);
+  min-height: 2.25rem;
+}
+
+.as-share-agent-value button {
+  border-radius: 0 var(--as-radius) var(--as-radius) 0;
+}
+
+.as-share-agent-value code {
+  border-radius: var(--as-radius) 0 0 var(--as-radius);
+  color: var(--as-text);
+}
+
+.as-share-agent-setup section > header strong {
+  font-size: 0.875rem;
+}
+
+.as-share-agent-setup section > header span {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+}
+
+.as-share-access-option {
+  border-radius: var(--as-radius-lg);
+}
+
+.as-share-access-option strong {
+  font-size: 0.875rem;
+}
+
+.as-share-access-option small {
+  color: var(--as-muted);
+  font-size: 0.8125rem;
+}
+
+.as-share-network-note,
+.as-share-access-warning {
+  border-radius: var(--as-radius);
+}
+
+.as-share-network-note {
+  color: var(--as-muted);
+}
+
+.as-share-popover__footer {
+  color: var(--as-muted);
+  font-size: 0.75rem;
+  padding: 0.65rem 1rem;
+}
+
+@media (max-width: 560px) {
+  .as-share-link > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

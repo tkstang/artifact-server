@@ -1,4 +1,5 @@
 import {
+  ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Cancel01Icon,
@@ -82,6 +83,7 @@ export function ReviewShareControl({
   const [copiedTarget, setCopiedTarget] = useState<CopiedTarget | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const copiedResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const valueElements = useRef(new Map<CopiedTarget, HTMLElement>());
 
@@ -96,6 +98,7 @@ export function ReviewShareControl({
       setScreen("overview");
       setCopiedTarget(null);
       setFailure(null);
+      setMoreOpen(false);
     }
   };
 
@@ -274,7 +277,7 @@ export function ReviewShareControl({
                         icon={copiedTarget === "review-link" ? Tick02Icon : Copy01Icon}
                         strokeWidth={1.8}
                       />
-                      {copiedTarget === "review-link" ? "Copied" : "Copy Review link"}
+                      {copiedTarget === "review-link" ? "Copied" : "Copy review link"}
                     </button>
                   </div>
                 </section>
@@ -287,7 +290,9 @@ export function ReviewShareControl({
                   />
                   <p>
                     People with access to this Artifact Server can review this exact version.
-                    {publicArtifact ? " The latest raw artifact is public." : ""}
+                    {publicArtifact
+                      ? " The latest raw artifact is public to anyone with its link."
+                      : ""}
                   </p>
                   <button
                     className="as-button"
@@ -299,81 +304,103 @@ export function ReviewShareControl({
                   </button>
                 </div>
 
-                <section aria-labelledby="as-share-secondary-heading" className="as-share-secondary">
-                  <h3 id="as-share-secondary-heading">Other links</h3>
-                  <ShareSecondaryLink
-                    copied={copiedTarget === "latest-link"}
-                    description="Moves when a new version is published"
-                    label="Latest"
-                    onCopy={() => {
-                      if (details !== null) {
-                        void copyText(
-                          details.links.artifact,
-                          "latest-link",
-                        );
-                      }
-                    }}
-                    value={details?.links.artifact ?? ""}
-                    valueRef={registerValue("latest-link")}
-                  />
-                  <ShareSecondaryLink
-                    copied={copiedTarget === "raw-link"}
-                    description="Exact version without Review controls"
-                    label="Raw"
-                    onCopy={() => {
-                      if (selectedVersion !== null) {
-                        void copyText(
-                          selectedVersion.links.version,
-                          "raw-link",
-                        );
-                      }
-                    }}
-                    value={selectedVersion?.links.version ?? ""}
-                    valueRef={registerValue("raw-link")}
-                  />
-                </section>
-
-                <section aria-labelledby="as-share-agent-heading" className="as-share-agent">
-                  <h3 id="as-share-agent-heading">Review with an AI agent</h3>
-                  <p>Copy one complete prompt into Claude, Codex, Cursor, GitHub Copilot, Pi, or OpenCode.</p>
-                  <div className="as-share-agent__actions">
-                    <button
-                      className="as-share-agent__prompt"
-                      disabled={details === null || selectedVersion === null}
-                      onClick={() => void copyAgentPrompt()}
-                      type="button"
-                    >
-                      <AgentLogos />
-                      <span>
-                        {copiedTarget === "agent-prompt" ? "Prompt copied" : "Copy review prompt"}
-                      </span>
-                      <HugeiconsIcon
-                        aria-hidden="true"
-                        icon={copiedTarget === "agent-prompt" ? Tick02Icon : Copy01Icon}
-                        strokeWidth={1.8}
-                      />
-                    </button>
-                    <button
-                      className="as-share-agent__setup"
-                      disabled={details === null}
-                      onClick={() => {
-                        setFailure(null);
-                        setScreen("agents");
-                      }}
-                      type="button"
-                    >
-                      Connect MCP
-                      <HugeiconsIcon aria-hidden="true" icon={ArrowRight01Icon} strokeWidth={1.8} />
-                    </button>
-                  </div>
-                </section>
-
                 {failure === null ? null : (
                   <p className="as-share-message" data-tone="error" role="alert">{failure}</p>
                 )}
                 {notice === null ? null : (
                   <p className="as-share-message" data-tone="notice" role="status">{notice}</p>
                 )}
+
+                <div className="as-share-more">
+                  <button
+                    aria-controls="as-share-more-panel"
+                    aria-expanded={moreOpen}
+                    className="as-share-more__toggle"
+                    onClick={() => setMoreOpen((current) => !current)}
+                    type="button"
+                  >
+                    <HugeiconsIcon
+                      aria-hidden="true"
+                      icon={moreOpen ? ArrowDown01Icon : ArrowRight01Icon}
+                      strokeWidth={1.8}
+                    />
+                    More ways to share
+                  </button>
+                  <div hidden={!moreOpen} id="as-share-more-panel">
+                    <section
+                      aria-labelledby="as-share-secondary-heading"
+                      className="as-share-secondary"
+                    >
+                      <h3 id="as-share-secondary-heading">Other links</h3>
+                      <ShareSecondaryLink
+                        copied={copiedTarget === "latest-link"}
+                        description="Moves when a new version is published"
+                        label="Latest"
+                        onCopy={() => {
+                          if (details !== null) {
+                            void copyText(details.links.artifact, "latest-link");
+                          }
+                        }}
+                        value={details?.links.artifact ?? ""}
+                        valueRef={registerValue("latest-link")}
+                      />
+                      <ShareSecondaryLink
+                        copied={copiedTarget === "raw-link"}
+                        description="Exact version without Review controls"
+                        label="Raw"
+                        onCopy={() => {
+                          if (selectedVersion !== null) {
+                            void copyText(selectedVersion.links.version, "raw-link");
+                          }
+                        }}
+                        value={selectedVersion?.links.version ?? ""}
+                        valueRef={registerValue("raw-link")}
+                      />
+                    </section>
+
+                    <section aria-labelledby="as-share-agent-heading" className="as-share-agent">
+                      <h3 id="as-share-agent-heading">Review with an AI agent</h3>
+                      <p>
+                        Copy one complete prompt into Claude, Codex, Cursor, GitHub Copilot, Pi, or
+                        OpenCode.
+                      </p>
+                      <div className="as-share-agent__actions">
+                        <button
+                          className="as-share-agent__prompt"
+                          disabled={details === null || selectedVersion === null}
+                          onClick={() => void copyAgentPrompt()}
+                          type="button"
+                        >
+                          <AgentLogos />
+                          <span>
+                            {copiedTarget === "agent-prompt" ? "Prompt copied" : "Copy review prompt"}
+                          </span>
+                          <HugeiconsIcon
+                            aria-hidden="true"
+                            icon={copiedTarget === "agent-prompt" ? Tick02Icon : Copy01Icon}
+                            strokeWidth={1.8}
+                          />
+                        </button>
+                        <button
+                          className="as-share-agent__setup"
+                          disabled={details === null}
+                          onClick={() => {
+                            setFailure(null);
+                            setScreen("agents");
+                          }}
+                          type="button"
+                        >
+                          Connect MCP
+                          <HugeiconsIcon
+                            aria-hidden="true"
+                            icon={ArrowRight01Icon}
+                            strokeWidth={1.8}
+                          />
+                        </button>
+                      </div>
+                    </section>
+                  </div>
+                </div>
               </div>
             ) : screen === "agents" ? (
               <div className="as-share-agent-setup">
