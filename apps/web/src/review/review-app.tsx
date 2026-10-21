@@ -1646,16 +1646,20 @@ function ArtifactReview({
                 type="button"
               >
                 <span className="as-artifact-card__title-row">
-                  <strong>{artifact.name}</strong>
+                  <strong title={artifact.name}>{artifact.name}</strong>
                   <AccessPill access={artifact.accessSetting} />
                 </span>
                 <span className="as-artifact-card__meta">
                   <span className="as-artifact-card__history">
                     <time dateTime={artifact.createdAt}>{formatTimestamp(artifact.createdAt)}</time>
-                    <span aria-hidden="true">·</span>
-                    <span>{versionCount} version{versionCount === 1 ? "" : "s"}</span>
+                    {versionCount > 1 ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{versionCount} versions</span>
+                      </>
+                    ) : null}
                   </span>
-                  {commentCount === null ? null : (
+                  {commentCount === null || commentCount === 0 ? null : (
                     <span className="as-artifact-card__counts">
                       <span title={`${commentCount} comment${commentCount === 1 ? "" : "s"} on every version, open, resolved and sent`}>
                         <HugeiconsIcon aria-hidden="true" icon={Comment01Icon} strokeWidth={1.8} />
