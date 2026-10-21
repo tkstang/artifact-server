@@ -122,7 +122,7 @@ export function useDispatchUndo(
     ? null
     : (
       <section
-        className="fixed bottom-4 left-1/2 z-50 flex w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between gap-4 border bg-popover p-3 text-sm text-popover-foreground shadow-xl"
+        className="fixed bottom-4 left-1/2 z-50 flex w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between gap-4 rounded-lg border bg-popover p-3 text-sm text-popover-foreground shadow-xl"
         role="status"
       >
         {toast.kind === "sent"

@@ -291,6 +291,10 @@
   justify-self: start;
 }
 
+.as-comments > .as-comments__empty {
+  padding: 1rem 1rem 0.5rem;
+}
+
 .as-comments__empty {
   display: grid;
   gap: 0.35rem;
