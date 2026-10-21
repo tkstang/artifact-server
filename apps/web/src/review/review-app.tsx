@@ -2612,7 +2612,7 @@ function FilesInspector({
 }) {
   return (
     <div className="as-inspector-stack">
-      <InspectorSection count={version.manifest.entries.length} title="Manifest">
+      <InspectorSection count={version.manifest.entries.length} title="Files in this version">
         <ol className="as-file-list">
           {version.manifest.entries.map((entry) => (
             <li key={entry.path}>
@@ -2692,7 +2692,7 @@ function VersionsInspector({
           </form>
         </InspectorSection>
       )}
-      <InspectorSection count={versions.length} title="Immutable history">
+      <InspectorSection count={versions.length} title="History">
         <ol className="as-version-list">
           {versions.map(({version}) => (
             <li key={version.id}>
@@ -2708,9 +2708,9 @@ function VersionsInspector({
                     <strong>Version {version.number}</strong>
                     <time dateTime={version.createdAt}>{formatTimestamp(version.createdAt)}</time>
                   </span>
-                  <span className="as-version-list__state">
-                    {version.id === currentVersionId ? "current" : compactId(version.id)}
-                  </span>
+                  {version.id === currentVersionId ? (
+                    <span className="as-version-list__state">current</span>
+                  ) : null}
                 </button>
                 {!canManage || version.id === currentVersionId ? null : (
                   <MakeCurrentControl
@@ -2757,7 +2757,7 @@ function ActivityInspector({
               <span className="as-activity-list__meta">
                 <time dateTime={action.createdAt}>{formatTimestamp(action.createdAt)}</time>
                 {/* Names are not available to the client; the actor stays a short ID. */}
-                <span>by <code title={action.principalId}>{compactId(action.principalId)}</code></span>
+                <span>by <code title={action.principalId}>{shortPrincipalId(action.principalId)}</code></span>
               </span>
             </li>
           ))}
@@ -2940,7 +2940,7 @@ function TombstoneArtifactControl({
         <Dialog.Popup className="as-confirm-dialog">
           <Dialog.Title>Delete {artifact.name}?</Dialog.Title>
           <Dialog.Description>
-            This removes the artifact from normal use but retains its immutable version records. Type the artifact name to confirm.
+            This removes the artifact from normal use. Its saved versions are kept. Type the artifact name to confirm.
           </Dialog.Description>
           <label>
             <span className="as-visually-hidden">Artifact name</span>
@@ -3287,7 +3287,7 @@ function reviewPreviewKind(
   return "other";
 }
 
-function compactId(value: string): string {
-  const unprefixed = value.startsWith("ver_") ? value.slice(4) : value;
-  return unprefixed.slice(0, 8);
+/** A principal ID short enough for a row; the full ID stays in its tooltip. */
+function shortPrincipalId(value: string): string {
+  return value.length <= 18 ? value : `${value.slice(0, 16)}…`;
 }

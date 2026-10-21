@@ -497,6 +497,11 @@ body {
   gap: 0.2rem 0.6rem;
 }
 
+.as-activity-list__meta time {
+  color: inherit;
+  font-size: inherit;
+}
+
 .as-activity-list__meta code {
   font-family: var(--as-mono-font);
   font-size: 0.6875rem;

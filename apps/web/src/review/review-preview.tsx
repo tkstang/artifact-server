@@ -82,7 +82,7 @@ export function ReviewPreview({
   if (version === null) {
     return (
       <PreviewState
-        description="Reading the selected immutable version."
+        description="Reading this version."
         title="Loading preview"
       />
     );
@@ -102,7 +102,7 @@ export function ReviewPreview({
     return (
       <TerminalPreviewState
         actions={commonActions}
-        description="This path is not part of the selected immutable version."
+        description="This file is not part of this version."
         mediaType="unknown"
         path={path}
         size={null}
@@ -186,7 +186,7 @@ export function ReviewPreview({
   return (
     <TerminalPreviewState
       actions={commonActions}
-      description="Artifact Server does not preview this declared media type."
+      description="This kind of file cannot be previewed here. Open it raw or download it."
       mediaType={entry.mediaType}
       path={entry.path}
       size={entry.size}
@@ -408,7 +408,7 @@ function HtmlPreview({
   if (loading) {
     return (
       <PreviewState
-        description={`Reading ${entry.path} from the selected version.`}
+        description={`Reading ${entry.path}.`}
         title="Loading preview"
       />
     );
