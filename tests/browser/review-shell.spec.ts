@@ -310,6 +310,25 @@ test.describe("Review shell", () => {
     }
   });
 
+  test("CMT-015-B: on a phone the HTML focus bar keeps the artifact identity and exit on screen", async ({browser}) => {
+    const fixture = await startBrowserFixture(browser);
+    try {
+      const published = await publishShellFixture(fixture, "A long title for an important document");
+      await fixture.page.setViewportSize({height: 844, width: 390});
+      await localLogin(fixture);
+      await fixture.page.goto(`${reviewUrl(fixture, published.body.artifact.id, published.body.version.id)}&view=focus`);
+      const focusBar = fixture.page.getByRole("toolbar", {name: "Artifact viewer controls"});
+      const exit = focusBar.getByRole("button", {name: "Exit full screen"});
+      await expect(exit).toBeVisible();
+      await expect(exit).toBeInViewport({ratio: 1});
+      const identity = fixture.page.locator(".as-focus-controls__identity");
+      await expect(identity).toBeInViewport({ratio: 1});
+      await expect(identity.locator(".as-version-chip")).toBeInViewport({ratio: 1});
+    } finally {
+      await stopBrowserFixture(fixture);
+    }
+  });
+
   test("CMT-016-F: an unavailable Review target is reported once, with a way back", async ({browser}) => {
     const fixture = await startBrowserFixture(browser);
     try {

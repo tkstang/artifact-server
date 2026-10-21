@@ -339,6 +339,19 @@ body {
   }
 }
 
+/* With the identity added the focus bar can be wider than a phone, for every
+   preview kind: bound the dock to the panel and let the open bar wrap, rows
+   kept to the right, so the identity and the exit stay on screen. A bar
+   sliding away (collapsing, or beside open comments) keeps its one row. */
+.as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] {
+  max-width: calc(100% - 1.5rem);
+}
+
+.as-focus-controls-dock[data-collapsed="false"][data-comments-open="false"] .as-focus-controls {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 /* On phones the focus bar wraps to a third row with the identity added;
    the Markdown reader starts below it. */
 @media (max-width: 600px) {
