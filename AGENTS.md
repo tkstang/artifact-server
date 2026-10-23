@@ -43,11 +43,11 @@ guide does not cover, search through the source code in `node_modules/effect/src
 Run `pnpm verify:iteration`. Report any requirement that is still specified but not proved; do not mark it verified optimistically.
 
 - Agent instructions are still true: when a change adds, renames, or removes a command, directory, convention, workflow, version pin, or known footgun, create or update the covering instruction files in the same PR (see "Keeping instructions current").
-- Update human docs describing changed behavior in the same PR: `README.md`, `docs/`, and the product and conformance contracts under `project/spec/`, as applicable.
+- Update human docs describing changed behavior in the same PR wherever they live, including `README.md`, `docs/`, the public site in `apps/site/src/content/docs/`, nested READMEs under `deploy/`, `packaging/`, and `integrations/`, the shipped skill in `skills/artifact-server/`, and the product and conformance contracts under `project/spec/`, as applicable.
 
 ## Scoped instructions
 
-- `AGENTS.md` is currently the only repository instruction file; there are no nested instruction files or scoped rules. Dependency-owned Effect guidance is covered above.
+- `AGENTS.md` is currently the only repository instruction file; there are no nested instruction files or scoped rules. Dependency-owned Effect guidance is covered above. `skills/artifact-server/` is shipped user guidance, not instructions for developing this repository.
 
 ## Keeping instructions current
 
